@@ -21,6 +21,9 @@ const SCREENS = ["White", "Red", "Green", "Blue", "Black"];
 
 const DEFECT_TYPES = ["픽셀 이상", "줄 이상", "국소적 색 이상", "화면 미출력"];
 
+const okSelectedStyle = { backgroundColor: "#2e7d32", color: "#fff" };
+const ngSelectedStyle = { backgroundColor: "#b00020", color: "#fff" };
+
 const initialScreenResults = SCREENS.reduce((acc, screen) => {
   acc[screen] = null;
   return acc;
@@ -154,10 +157,10 @@ function InspectionForm() {
     }));
   }
 
-  function handleScreenResultChange(screen, result) {
-    const wasOk = screenResults[screen] === "OK";
-    setScreenResults((prev) => ({ ...prev, [screen]: result }));
-    if (result === "OK" && !wasOk) {
+  function handleScreenResultToggle(screen, result) {
+    const nextResult = screenResults[screen] === result ? null : result;
+    setScreenResults((prev) => ({ ...prev, [screen]: nextResult }));
+    if (nextResult !== "NG") {
       updateScreenDetail(screen, createEmptyScreenDetail);
     }
   }
@@ -206,14 +209,16 @@ function InspectionForm() {
           <button
             type="button"
             aria-pressed={screenResults[screen] === "OK"}
-            onClick={() => handleScreenResultChange(screen, "OK")}
+            style={screenResults[screen] === "OK" ? okSelectedStyle : undefined}
+            onClick={() => handleScreenResultToggle(screen, "OK")}
           >
             OK
           </button>
           <button
             type="button"
             aria-pressed={screenResults[screen] === "NG"}
-            onClick={() => handleScreenResultChange(screen, "NG")}
+            style={screenResults[screen] === "NG" ? ngSelectedStyle : undefined}
+            onClick={() => handleScreenResultToggle(screen, "NG")}
           >
             NG
           </button>

@@ -384,7 +384,7 @@
     },
     {
       "id": "LB-123",
-      "status": "in_progress",
+      "status": "done",
       "priority": "나중",
       "category": "저장",
       "title": "검사 결과 수정 이력 저장",
@@ -432,7 +432,7 @@
     },
     {
       "id": "LB-126",
-      "status": "todo",
+      "status": "done",
       "priority": "나중",
       "category": "화면",
       "title": "OK/NG 버튼 선택 색상 및 재클릭 해제",
