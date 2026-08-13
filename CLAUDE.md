@@ -22,6 +22,12 @@
 - 외부 DB나 사내 계정 로그인을 연동하지 않는다.
 - `backlog.json`을 직접 편집하지 않는다. `node tools/backlog.mjs`의 list/set/validate로만 읽고 쓴다.
 
+## backlog.json 작업 관련 코드를 수정한 뒤에는 항상
+
+1. `code-reviewer` 서브에이전트를 호출해 변경된 파일을 검토한다.
+2. 지적사항을 사용자에게 보여주고, 수정을 반영할지 물어본다. 반영하기로 하면 직접 수정한다(다시 code-reviewer를 부를지는 상황에 따라 판단).
+3. `git-committer` 서브에이전트를 호출하기 전에 커밋할지 사용자에게 물어본다. 승인받은 뒤에만 `git-committer`를 호출한다.
+
 ## 막히면
 
 - `node tools/backlog.mjs validate`를 실행해 VALID인지 먼저 확인한다.
