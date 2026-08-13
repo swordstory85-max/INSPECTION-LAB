@@ -27,6 +27,19 @@ function cmdList(data) {
   }
 }
 
+function cmdShow(data, id) {
+  if (!id) {
+    console.error("사용법: node tools/backlog.mjs show <id>");
+    process.exit(1);
+  }
+  const task = data.tasks.find((t) => t.id === id);
+  if (!task) {
+    console.error(`거부: id "${id}"를 가진 작업을 찾을 수 없습니다.`);
+    process.exit(1);
+  }
+  console.log(JSON.stringify(task, null, 2));
+}
+
 function cmdSet(data, id, status) {
   if (!id || !status) {
     console.error("사용법: node tools/backlog.mjs set <id> <status>");
@@ -199,6 +212,9 @@ function main() {
     case "list":
       cmdList(data);
       break;
+    case "show":
+      cmdShow(data, args[0]);
+      break;
     case "set":
       cmdSet(data, args[0], args[1]);
       break;
@@ -211,6 +227,7 @@ function main() {
     default:
       console.error("사용법:");
       console.error("  node tools/backlog.mjs list");
+      console.error("  node tools/backlog.mjs show <id>");
       console.error("  node tools/backlog.mjs set <id> <status>");
       console.error("  node tools/backlog.mjs add '<json>'");
       console.error("  node tools/backlog.mjs validate");
