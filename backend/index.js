@@ -4,6 +4,7 @@ const { listTvs } = require("./tvs.js");
 const { getInspectionHistory } = require("./history.js");
 const { validateInspectionPayload } = require("./validation.js");
 const { validateCorrectionPayload, addNoteCorrection } = require("./corrections.js");
+const { isValidMonth, writeMonthlyWorkbook } = require("./export.js");
 
 const app = express();
 const PORT = 4000;
@@ -64,6 +65,16 @@ app.post("/inspections/:id/corrections", (req, res) => {
     }
     throw error;
   }
+});
+
+app.get("/inspections/export", async (req, res) => {
+  const { month } = req.query;
+  if (!isValidMonth(month)) {
+    res.status(400).json({ errors: ["month는 YYYY-MM 형식이어야 합니다."] });
+    return;
+  }
+
+  await writeMonthlyWorkbook(res, month);
 });
 
 app.listen(PORT, () => {

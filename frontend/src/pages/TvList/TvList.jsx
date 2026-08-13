@@ -10,8 +10,14 @@ const ngRowStyle = { cursor: "pointer", backgroundColor: "#fde2e2" };
 const okRowStyle = { cursor: "pointer" };
 const ngResultCellStyle = { ...cellStyle, color: "#b00020", fontWeight: "bold" };
 
+const EXPORT_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+
 function isNgResult(tv) {
   return tv.last_result === "NG";
+}
+
+function isValidExportMonth(month) {
+  return EXPORT_MONTH_PATTERN.test(month);
 }
 
 function TvList() {
@@ -20,6 +26,7 @@ function TvList() {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [ngOnly, setNgOnly] = useState(false);
+  const [exportMonth, setExportMonth] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -62,10 +69,33 @@ function TvList() {
     });
   }, [tvs, searchTerm, ngOnly]);
 
+  function handleExport() {
+    if (!isValidExportMonth(exportMonth)) {
+      return;
+    }
+    window.location.href = `${API_BASE_URL}/inspections/export?month=${encodeURIComponent(exportMonth)}`;
+  }
+
   return (
     <div>
       <h2>TV 목록</h2>
       {error && <p>{error}</p>}
+
+      <label>
+        월별 엑셀 다운로드
+        <input
+          type="month"
+          value={exportMonth}
+          onChange={(event) => setExportMonth(event.target.value)}
+        />
+      </label>
+      <button
+        type="button"
+        onClick={handleExport}
+        disabled={!isValidExportMonth(exportMonth)}
+      >
+        다운로드
+      </button>
 
       <label>
         검색
