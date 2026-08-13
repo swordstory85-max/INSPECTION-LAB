@@ -1,0 +1,31 @@
+# CLAUDE.md
+
+## 명령어
+
+- 아직 `package.json`이 없다 — 등록된 npm 명령어가 없다 (LB-101 완료 전까지는 정상 상태).
+- `node tools/backlog.mjs list` — backlog.json 작업을 id/상태/제목으로 한 줄씩 출력한다.
+- `node tools/backlog.mjs set <id> <status>` — 작업 상태를 바꿔 backlog.json에 저장한다.
+- `node tools/backlog.mjs validate` — backlog.json 형식을 검사해 VALID 또는 문제 목록을 출력한다.
+
+## 구조
+
+- `BRIEF.md` — 최초 요구사항 원본. 배경·목표 문구의 기준.
+- `SPEC.md` — 화면 흐름·데이터 구조(필드명)·저장 제약·완료 조건의 기준. BRIEF.md와 다르면 SPEC.md를 따른다.
+- `backlog.json` — 작업 목록과 각 작업 상태의 기준(SSOT).
+- `tools/backlog.mjs` — backlog.json을 읽고 쓰는 유일한 스크립트.
+- `.claude/rules/점검기록-데이터.md` — `data/` 파일을 다룰 때 적용되는 저장 규칙(추가만 가능, 필수 항목, NG 메모 등)의 기준.
+
+## 항상 지킬 것
+
+- 검사 기록은 추가만 한다. 저장된 기록을 수정하거나 삭제하지 않는다.
+- 화면 판정이 NG면 조치 메모 없이는 저장하지 않는다.
+- 외부 DB나 사내 계정 로그인을 연동하지 않는다.
+- `backlog.json`을 직접 편집하지 않는다. `node tools/backlog.mjs`의 list/set/validate로만 읽고 쓴다.
+
+## 막히면
+
+- `node tools/backlog.mjs validate`를 실행해 VALID인지 먼저 확인한다.
+- `package.json`이 있는지 확인한다. 없으면 LB-101이 아직 끝나지 않은 것이다.
+- `node -v`로 Node 버전을 확인한다 (fs/path/url 표준 모듈만 쓰므로 최신 LTS면 충분하다).
+- 포트 충돌을 확인한다: backend는 4000, frontend는 5173을 쓴다 (backlog.json LB-102, LB-104 참고).
+- `node tools/backlog.mjs list`로 지금 어떤 작업까지 done인지 확인하고 그 다음 작업부터 진행한다.
