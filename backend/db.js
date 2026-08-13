@@ -34,6 +34,15 @@ db.exec(`
     note TEXT,
     UNIQUE (inspection_id, screen)
   );
+
+  CREATE TABLE IF NOT EXISTS screen_note_correction (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    inspection_id INTEGER NOT NULL REFERENCES inspection(id),
+    screen TEXT NOT NULL CHECK (screen IN ('White', 'Red', 'Green', 'Blue', 'Black')),
+    previous_note TEXT NOT NULL,
+    new_note TEXT NOT NULL,
+    corrected_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  );
 `);
 
 module.exports = db;

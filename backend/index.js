@@ -3,6 +3,7 @@ const { createInspection } = require("./inspections.js");
 const { listTvs } = require("./tvs.js");
 const { getInspectionHistory } = require("./history.js");
 const { validateInspectionPayload } = require("./validation.js");
+const { validateCorrectionPayload, addNoteCorrection } = require("./corrections.js");
 
 const app = express();
 const PORT = 4000;
@@ -41,6 +42,28 @@ app.get("/tvs", (req, res) => {
 
 app.get("/tvs/:serial/inspections", (req, res) => {
   res.json(getInspectionHistory(req.params.serial));
+});
+
+app.post("/inspections/:id/corrections", (req, res) => {
+  const inspectionId = Number(req.params.id);
+  const { screen, note } = req.body ?? {};
+
+  const errors = validateCorrectionPayload(inspectionId, screen, note);
+  if (errors.length > 0) {
+    res.status(400).json({ errors });
+    return;
+  }
+
+  try {
+    const result = addNoteCorrection(inspectionId, screen, note);
+    res.status(201).json(result);
+  } catch (error) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ errors: [error.message] });
+      return;
+    }
+    throw error;
+  }
 });
 
 app.listen(PORT, () => {

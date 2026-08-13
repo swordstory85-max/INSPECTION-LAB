@@ -1,4 +1,5 @@
 const db = require("./db.js");
+const { resolveCurrentNote } = require("./noteHistory.js");
 
 const historyRowsStmt = db.prepare(`
   SELECT
@@ -20,8 +21,35 @@ const historyRowsStmt = db.prepare(`
   ORDER BY i.inspected_at DESC, i.id DESC, s.id ASC
 `);
 
+const correctionsForTvStmt = db.prepare(`
+  SELECT c.inspection_id, c.screen, c.previous_note, c.new_note, c.corrected_at
+  FROM screen_note_correction c
+  JOIN inspection i ON i.id = c.inspection_id
+  WHERE i.tv_serial_number = ?
+  ORDER BY c.inspection_id, c.screen, c.id ASC
+`);
+
+function groupCorrectionsByInspectionAndScreen(serialNumber) {
+  const grouped = new Map();
+
+  for (const row of correctionsForTvStmt.all(serialNumber)) {
+    const key = `${row.inspection_id}:${row.screen}`;
+    if (!grouped.has(key)) {
+      grouped.set(key, []);
+    }
+    grouped.get(key).push({
+      previous_note: row.previous_note,
+      new_note: row.new_note,
+      corrected_at: row.corrected_at,
+    });
+  }
+
+  return grouped;
+}
+
 function getInspectionHistory(serialNumber) {
   const rows = historyRowsStmt.all(serialNumber);
+  const correctionsByKey = groupCorrectionsByInspectionAndScreen(serialNumber);
 
   const inspections = [];
   const byId = new Map();
@@ -45,11 +73,19 @@ function getInspectionHistory(serialNumber) {
     }
 
     if (row.screen !== null) {
+      const corrections =
+        correctionsByKey.get(`${row.inspection_id}:${row.screen}`) ?? [];
+      const currentNote = resolveCurrentNote(
+        row.note,
+        corrections.map((correction) => correction.new_note),
+      );
+
       inspection.screens.push({
         screen: row.screen,
         result: row.screen_result,
         defect_types: JSON.parse(String(row.defect_types)),
-        note: row.note,
+        note: currentNote,
+        corrections,
       });
     }
   }
