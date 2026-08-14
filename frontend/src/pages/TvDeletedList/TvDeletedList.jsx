@@ -12,10 +12,6 @@ const COLUMNS = [
   "삭제일시",
 ];
 
-const tableStyle = { borderCollapse: "collapse" };
-const cellStyle = { border: "1px solid", padding: 4 };
-const rowStyle = { cursor: "pointer" };
-
 function TvDeletedList() {
   const navigate = useNavigate();
   const [tvs, setTvs] = useState([]);
@@ -48,46 +44,55 @@ function TvDeletedList() {
   }, []);
 
   return (
-    <div>
+    <div className="card">
       <h2>삭제된 TV 목록</h2>
-      <button type="button" onClick={() => navigate("/tvs")}>
-        ← 목록으로
-      </button>
+      <div className="toolbar">
+        <button type="button" className="btn" onClick={() => navigate("/tvs")}>
+          ← 목록으로
+        </button>
+      </div>
 
-      {error && <p>{error}</p>}
+      {error && <p className="error-text">{error}</p>}
 
-      <table style={tableStyle}>
-        <thead>
-          <tr>
-            {COLUMNS.map((column) => (
-              <th key={column} style={cellStyle}>
-                {column}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {tvs.map((tv) => (
-            <tr
-              key={tv.serial_number}
-              onClick={() =>
-                navigate(`/tvs/${encodeURIComponent(tv.serial_number)}`)
-              }
-              style={rowStyle}
-            >
-              <td style={cellStyle}>{tv.model_name}</td>
-              <td style={cellStyle}>{tv.serial_number}</td>
-              <td style={cellStyle}>{tv.last_inspected_at}</td>
-              <td style={cellStyle}>{tv.last_result}</td>
-              <td style={cellStyle}>{tv.last_inspector_name}</td>
-              <td style={cellStyle}>{tv.inspection_count}건</td>
-              <td style={cellStyle}>{tv.deleted_at}</td>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              {COLUMNS.map((column) => (
+                <th key={column}>{column}</th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {tvs.map((tv) => {
+              const isNg = tv.last_result === "NG";
+              return (
+              <tr
+                key={tv.serial_number}
+                className={`is-clickable${isNg ? " row-ng" : ""}`}
+                onClick={() =>
+                  navigate(`/tvs/${encodeURIComponent(tv.serial_number)}`)
+                }
+              >
+                <td>{tv.model_name}</td>
+                <td>{tv.serial_number}</td>
+                <td>{tv.last_inspected_at}</td>
+                <td>
+                  <span className={`badge ${isNg ? "badge-ng" : "badge-ok"}`}>
+                    {tv.last_result}
+                  </span>
+                </td>
+                <td>{tv.last_inspector_name}</td>
+                <td>{tv.inspection_count}건</td>
+                <td>{tv.deleted_at}</td>
+              </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
-      {tvs.length === 0 && <p>삭제된 TV가 없습니다.</p>}
+      {tvs.length === 0 && <p className="empty-state">삭제된 TV가 없습니다.</p>}
     </div>
   );
 }

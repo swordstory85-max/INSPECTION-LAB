@@ -12,12 +12,6 @@ const COLUMNS = [
   "총 검사 건수",
 ];
 
-const tableStyle = { borderCollapse: "collapse" };
-const cellStyle = { border: "1px solid", padding: 4 };
-const ngRowStyle = { cursor: "pointer", backgroundColor: "#fde2e2" };
-const okRowStyle = { cursor: "pointer" };
-const ngResultCellStyle = { ...cellStyle, color: "#b00020", fontWeight: "bold" };
-
 const EXPORT_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 function isNgResult(tv) {
@@ -149,100 +143,110 @@ function TvList() {
   }
 
   return (
-    <div>
+    <div className="card">
       <h2>TV 목록</h2>
-      <button type="button" onClick={() => navigate("/deleted-tvs")}>
-        삭제된 목록 보기
-      </button>
-      {loadError && <p>{loadError}</p>}
-      {deleteError && <p>{deleteError}</p>}
 
-      <label>
-        월별 엑셀 다운로드
-        <input
-          type="month"
-          value={exportMonth}
-          onChange={(event) => setExportMonth(event.target.value)}
-        />
-      </label>
-      <button
-        type="button"
-        onClick={handleExport}
-        disabled={!isValidExportMonth(exportMonth)}
-      >
-        다운로드
-      </button>
+      {loadError && <p className="error-text">{loadError}</p>}
+      {deleteError && <p className="error-text">{deleteError}</p>}
 
-      <label>
-        검색
-        <input
-          type="text"
-          placeholder="모델명 또는 시리얼번호 검색"
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-        />
-      </label>
+      <div className="toolbar">
+        <button type="button" className="btn" onClick={() => navigate("/deleted-tvs")}>
+          삭제된 목록 보기
+        </button>
 
-      <label>
-        <input
-          type="checkbox"
-          checked={ngOnly}
-          onChange={(event) => setNgOnly(event.target.checked)}
-        />
-        NG만 보기
-      </label>
+        <label className="field">
+          검색
+          <input
+            type="text"
+            placeholder="모델명 또는 시리얼번호 검색"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+          />
+        </label>
 
-      <button
-        type="button"
-        onClick={handleDeleteSelected}
-        disabled={selectedSerials.size === 0 || isDeleting}
-      >
-        선택 삭제 ({selectedSerials.size})
-      </button>
+        <label className="field field-inline">
+          <input
+            type="checkbox"
+            checked={ngOnly}
+            onChange={(event) => setNgOnly(event.target.checked)}
+          />
+          NG만 보기
+        </label>
 
-      <table style={tableStyle}>
-        <thead>
-          <tr>
-            {COLUMNS.map((column) => (
-              <th key={column} style={cellStyle}>
-                {column}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {visibleTvs.map((tv) => {
-            const isNg = isNgResult(tv);
-            return (
-              <tr
-                key={tv.serial_number}
-                onClick={() =>
-                  navigate(`/tvs/${encodeURIComponent(tv.serial_number)}`)
-                }
-                style={isNg ? ngRowStyle : okRowStyle}
-              >
-                <td style={cellStyle} onClick={(event) => event.stopPropagation()}>
-                  <input
-                    type="checkbox"
-                    checked={selectedSerials.has(tv.serial_number)}
-                    onChange={() => toggleSelected(tv.serial_number)}
-                  />
-                </td>
-                <td style={cellStyle}>{tv.model_name}</td>
-                <td style={cellStyle}>{tv.serial_number}</td>
-                <td style={cellStyle}>{tv.last_inspected_at}</td>
-                <td style={isNg ? ngResultCellStyle : cellStyle}>
-                  {tv.last_result}
-                </td>
-                <td style={cellStyle}>{tv.last_inspector_name}</td>
-                <td style={cellStyle}>{tv.inspection_count}건</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+        <label className="field">
+          월별 엑셀 다운로드
+          <input
+            type="month"
+            value={exportMonth}
+            onChange={(event) => setExportMonth(event.target.value)}
+          />
+        </label>
+        <button
+          type="button"
+          className="btn"
+          onClick={handleExport}
+          disabled={!isValidExportMonth(exportMonth)}
+        >
+          다운로드
+        </button>
 
-      {visibleTvs.length === 0 && <p>검색/필터 결과가 없습니다.</p>}
+        <button
+          type="button"
+          className="btn btn-danger ml-auto"
+          onClick={handleDeleteSelected}
+          disabled={selectedSerials.size === 0 || isDeleting}
+        >
+          선택 삭제 ({selectedSerials.size})
+        </button>
+      </div>
+
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              {COLUMNS.map((column) => (
+                <th key={column}>{column}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {visibleTvs.map((tv) => {
+              const isNg = isNgResult(tv);
+              return (
+                <tr
+                  key={tv.serial_number}
+                  className={`is-clickable${isNg ? " row-ng" : ""}`}
+                  onClick={() =>
+                    navigate(`/tvs/${encodeURIComponent(tv.serial_number)}`)
+                  }
+                >
+                  <td onClick={(event) => event.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedSerials.has(tv.serial_number)}
+                      onChange={() => toggleSelected(tv.serial_number)}
+                    />
+                  </td>
+                  <td>{tv.model_name}</td>
+                  <td>{tv.serial_number}</td>
+                  <td>{tv.last_inspected_at}</td>
+                  <td>
+                    <span className={`badge ${isNg ? "badge-ng" : "badge-ok"}`}>
+                      {tv.last_result}
+                    </span>
+                  </td>
+                  <td>{tv.last_inspector_name}</td>
+                  <td>{tv.inspection_count}건</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {visibleTvs.length === 0 && (
+        <p className="empty-state">검색/필터 결과가 없습니다.</p>
+      )}
     </div>
   );
 }

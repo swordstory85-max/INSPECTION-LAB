@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { API_BASE_URL } from "../../config.js";
 
-const ngTextStyle = { color: "#b00020", fontWeight: "bold" };
-
 function TvHistory() {
   const { serial } = useParams();
   const navigate = useNavigate();
@@ -133,99 +131,120 @@ function TvHistory() {
   }
 
   return (
-    <div>
+    <div className="card">
       <h2>검사 이력: {serial}</h2>
-      <button type="button" onClick={() => navigate("/tvs")}>
-        ← 목록으로
-      </button>
+      <div className="toolbar">
+        <button type="button" className="btn" onClick={() => navigate("/tvs")}>
+          ← 목록으로
+        </button>
+      </div>
 
-      {error && <p>{error}</p>}
+      {error && <p className="error-text">{error}</p>}
 
-      <ul>
+      <ul className="history-list">
         {inspections.map((inspection) => {
           const isExpanded = expandedIds.has(inspection.id);
+          const isInspectionNg = inspection.overall_result === "NG";
           return (
-            <li key={inspection.id}>
+            <li key={inspection.id} className="history-entry">
               <button
                 type="button"
+                className={`history-entry-header${isInspectionNg ? " is-ng" : ""}`}
+                aria-expanded={isExpanded}
                 onClick={() => toggleExpanded(inspection.id)}
-                style={inspection.overall_result === "NG" ? ngTextStyle : undefined}
               >
-                {inspection.inspected_at} {inspection.inspector_name}{" "}
-                {inspection.overall_result}
+                {inspection.inspected_at} · {inspection.inspector_name}{" "}
+                <span className={`badge ${isInspectionNg ? "badge-ng" : "badge-ok"}`}>
+                  {inspection.overall_result}
+                </span>
               </button>
 
               {isExpanded && (
-                <ul>
+                <ul className="history-screens">
                   {inspection.screens.map((screen) => {
                     const key = `${inspection.id}:${screen.screen}`;
                     const isEditing = editingKeys.has(key);
                     const isSaving = savingKeys.has(key);
+                    const isScreenNg = screen.result === "NG";
 
                     return (
                       <li
                         key={screen.screen}
-                        style={screen.result === "NG" ? ngTextStyle : undefined}
+                        className={`history-screen${isScreenNg ? " is-ng" : ""}`}
                       >
-                        {screen.screen}: {screen.result}
-                        {screen.result === "NG" && (
-                          <>
-                            {" "}
-                            / {screen.defect_types.join(", ")} / {screen.note}
-                          </>
+                        <strong>{screen.screen}</strong>{" "}
+                        <span className={`badge ${isScreenNg ? "badge-ng" : "badge-ok"}`}>
+                          {screen.result}
+                        </span>
+                        {isScreenNg && (
+                          <> — {screen.defect_types.join(", ")} · {screen.note}</>
                         )}
 
-                        {screen.result === "NG" && !isEditing && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              startEdit(inspection.id, screen.screen, screen.note)
-                            }
-                          >
-                            메모 수정
-                          </button>
-                        )}
+                        {/* corrections는 NG 화면에만 생길 수 있다 (backend/corrections.js가
+                            OK 화면의 메모 수정을 400으로 막는다) — 그래서 수정 이력을
+                            isScreenNg 블록 안에 함께 둬도 안전하다. */}
+                        {isScreenNg && (
+                          <div className="history-screen-actions">
+                            {!isEditing && (
+                              <button
+                                type="button"
+                                className="btn"
+                                onClick={() =>
+                                  startEdit(inspection.id, screen.screen, screen.note)
+                                }
+                              >
+                                메모 수정
+                              </button>
+                            )}
 
-                        {isEditing && (
-                          <div>
-                            <textarea
-                              value={editDrafts[key] ?? ""}
-                              onChange={(event) =>
-                                setEditDrafts((prev) => ({
-                                  ...prev,
-                                  [key]: event.target.value,
-                                }))
-                              }
-                            />
-                            <button
-                              type="button"
-                              disabled={isSaving}
-                              onClick={() => saveEdit(inspection.id, screen.screen)}
-                            >
-                              저장
-                            </button>
-                            <button
-                              type="button"
-                              disabled={isSaving}
-                              onClick={() => cancelEdit(key)}
-                            >
-                              취소
-                            </button>
-                            {editErrors[key] && <p>{editErrors[key]}</p>}
+                            {isEditing && (
+                              <>
+                                <textarea
+                                  value={editDrafts[key] ?? ""}
+                                  onChange={(event) =>
+                                    setEditDrafts((prev) => ({
+                                      ...prev,
+                                      [key]: event.target.value,
+                                    }))
+                                  }
+                                />
+                                <div className="action-row">
+                                  <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    disabled={isSaving}
+                                    onClick={() => saveEdit(inspection.id, screen.screen)}
+                                  >
+                                    저장
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn"
+                                    disabled={isSaving}
+                                    onClick={() => cancelEdit(key)}
+                                  >
+                                    취소
+                                  </button>
+                                </div>
+                                {editErrors[key] && (
+                                  <p className="error-text">{editErrors[key]}</p>
+                                )}
+                              </>
+                            )}
+
+                            {screen.corrections.length > 0 && (
+                              <ul className="correction-log">
+                                <li>수정 이력</li>
+                                {screen.corrections.map((correction, index) => (
+                                  <li key={index}>
+                                    {correction.corrected_at}: "
+                                    {correction.previous_note}" → "
+                                    {correction.new_note}"
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
                           </div>
-                        )}
-
-                        {screen.corrections.length > 0 && (
-                          <ul>
-                            <li>수정 이력</li>
-                            {screen.corrections.map((correction, index) => (
-                              <li key={index}>
-                                {correction.corrected_at}: "
-                                {correction.previous_note}" → "
-                                {correction.new_note}"
-                              </li>
-                            ))}
-                          </ul>
                         )}
                       </li>
                     );
@@ -236,6 +255,10 @@ function TvHistory() {
           );
         })}
       </ul>
+
+      {inspections.length === 0 && !error && (
+        <p className="empty-state">검사 이력이 없습니다.</p>
+      )}
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { API_BASE_URL } from "../../config.js";
+import ScreenJudgmentTable from "./ScreenJudgmentTable.jsx";
+import { SCREENS } from "./constants.js";
 
 const initialTvInfo = {
   model_name: "",
@@ -16,15 +18,6 @@ const TV_INFO_FIELDS = [
   { field: "inspector_id", label: "검사자 사번" },
   { field: "inspector_contact", label: "검사자 연락처" },
 ];
-
-const SCREENS = ["White", "Red", "Green", "Blue", "Black"];
-
-const DEFECT_TYPES = ["픽셀 이상", "줄 이상", "국소적 색 이상", "화면 미출력"];
-
-const okSelectedStyle = { backgroundColor: "#2e7d32", color: "#fff" };
-const ngSelectedStyle = { backgroundColor: "#b00020", color: "#fff" };
-const tableStyle = { borderCollapse: "collapse" };
-const cellStyle = { border: "1px solid", padding: 4, verticalAlign: "top" };
 
 const initialScreenResults = SCREENS.reduce((acc, screen) => {
   acc[screen] = null;
@@ -44,7 +37,7 @@ function InspectionForm() {
   const [tvInfo, setTvInfo] = useState(initialTvInfo);
   const [screenResults, setScreenResults] = useState(initialScreenResults);
   const [screenDetails, setScreenDetails] = useState(initialScreenDetails);
-  const [resultMessage, setResultMessage] = useState("");
+  const [feedback, setFeedback] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function findMissingTvInfoLabels() {
@@ -82,31 +75,37 @@ function InspectionForm() {
 
     const missingLabels = findMissingTvInfoLabels();
     if (missingLabels.length > 0) {
-      setResultMessage(`다음 항목을 입력해주세요: ${missingLabels.join(", ")}`);
+      setFeedback({
+        type: "error",
+        text: `다음 항목을 입력해주세요: ${missingLabels.join(", ")}`,
+      });
       return;
     }
 
     const missingScreens = findMissingScreens();
     if (missingScreens.length > 0) {
-      setResultMessage(
-        `다음 화면의 판정(OK/NG)을 선택해주세요: ${missingScreens.join(", ")}`,
-      );
+      setFeedback({
+        type: "error",
+        text: `다음 화면의 판정(OK/NG)을 선택해주세요: ${missingScreens.join(", ")}`,
+      });
       return;
     }
 
     const ngScreensMissingNote = findNgScreensMissingNote();
     if (ngScreensMissingNote.length > 0) {
-      setResultMessage(
-        `다음 화면은 NG인데 조치 메모가 없습니다: ${ngScreensMissingNote.join(", ")}`,
-      );
+      setFeedback({
+        type: "error",
+        text: `다음 화면은 NG인데 조치 메모가 없습니다: ${ngScreensMissingNote.join(", ")}`,
+      });
       return;
     }
 
     const ngScreensMissingDefectType = findNgScreensMissingDefectType();
     if (ngScreensMissingDefectType.length > 0) {
-      setResultMessage(
-        `다음 화면은 NG인데 불량 항목이 선택되지 않았습니다: ${ngScreensMissingDefectType.join(", ")}`,
-      );
+      setFeedback({
+        type: "error",
+        text: `다음 화면은 NG인데 불량 항목이 선택되지 않았습니다: ${ngScreensMissingDefectType.join(", ")}`,
+      });
       return;
     }
 
@@ -136,12 +135,12 @@ function InspectionForm() {
         throw new Error(detail);
       }
 
-      setResultMessage("저장되었습니다.");
+      setFeedback({ type: "success", text: "저장되었습니다." });
       setTvInfo(initialTvInfo);
       setScreenResults(initialScreenResults);
       setScreenDetails(initialScreenDetails);
     } catch (error) {
-      setResultMessage(`저장에 실패했습니다: ${error.message}`);
+      setFeedback({ type: "error", text: `저장에 실패했습니다: ${error.message}` });
     } finally {
       setIsSubmitting(false);
     }
@@ -188,97 +187,52 @@ function InspectionForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <h2>검사 입력</h2>
+      <div className="card">
+        <h2>검사 입력</h2>
 
-      <table style={tableStyle} role="presentation">
-        <tbody>
-          {TV_INFO_FIELDS.map(({ field, label }) => (
-            <tr key={field}>
-              <th style={cellStyle}>
-                <label htmlFor={field}>{label}</label>
-              </th>
-              <td style={cellStyle}>
-                <input
-                  id={field}
-                  type="text"
-                  value={tvInfo[field]}
-                  onChange={handleTvInfoChange}
-                  onKeyDown={handleTvInfoKeyDown}
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <h2>화면별 판정</h2>
-
-      <table style={tableStyle}>
-        <thead>
-          <tr>
-            <th style={cellStyle}>화면</th>
-            <th style={cellStyle}>판정</th>
-            <th style={cellStyle}>불량 항목</th>
-            <th style={cellStyle}>조치 메모</th>
-          </tr>
-        </thead>
-        <tbody>
-          {SCREENS.map((screen) => (
-            <tr key={screen}>
-              <td style={cellStyle}>{screen}</td>
-              <td style={cellStyle}>
-                <button
-                  type="button"
-                  aria-pressed={screenResults[screen] === "OK"}
-                  style={screenResults[screen] === "OK" ? okSelectedStyle : undefined}
-                  onClick={() => handleScreenResultToggle(screen, "OK")}
-                >
-                  OK
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={screenResults[screen] === "NG"}
-                  style={screenResults[screen] === "NG" ? ngSelectedStyle : undefined}
-                  onClick={() => handleScreenResultToggle(screen, "NG")}
-                >
-                  NG
-                </button>
-              </td>
-              <td style={cellStyle}>
-                {screenResults[screen] === "NG" &&
-                  DEFECT_TYPES.map((defectType) => (
-                    <label key={defectType} style={{ display: "block" }}>
-                      <input
-                        type="checkbox"
-                        checked={screenDetails[screen].defectTypes.includes(
-                          defectType,
-                        )}
-                        onChange={() => handleDefectTypeToggle(screen, defectType)}
-                      />
-                      {defectType}
-                    </label>
-                  ))}
-              </td>
-              <td style={cellStyle}>
-                {screenResults[screen] === "NG" && (
-                  <textarea
-                    id={`${screen}-note`}
-                    aria-label={`${screen} 조치 메모`}
-                    value={screenDetails[screen].note}
-                    onChange={(event) => handleNoteChange(screen, event.target.value)}
+        <table role="presentation">
+          <tbody>
+            {TV_INFO_FIELDS.map(({ field, label }) => (
+              <tr key={field}>
+                <th>
+                  <label htmlFor={field}>{label}</label>
+                </th>
+                <td>
+                  <input
+                    id={field}
+                    type="text"
+                    value={tvInfo[field]}
+                    onChange={handleTvInfoChange}
+                    onKeyDown={handleTvInfoKeyDown}
                   />
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      <button type="submit" disabled={isSubmitting}>
-        저장
-      </button>
+      <div className="card">
+        <h2>화면별 판정</h2>
 
-      {resultMessage && <p>{resultMessage}</p>}
+        <ScreenJudgmentTable
+          screenResults={screenResults}
+          screenDetails={screenDetails}
+          onToggleResult={handleScreenResultToggle}
+          onToggleDefectType={handleDefectTypeToggle}
+          onNoteChange={handleNoteChange}
+        />
+
+        <button type="submit" className="btn btn-primary mt-md" disabled={isSubmitting}>
+          저장
+        </button>
+
+        {feedback && (
+          <p className={`${feedback.type === "error" ? "error-text" : "success-text"} mt-md`}>
+            {feedback.text}
+          </p>
+        )}
+      </div>
     </form>
   );
 }
