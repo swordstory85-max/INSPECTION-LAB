@@ -1,25 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../../config.js";
-
-const COLUMNS = [
-  "선택",
-  "모델명",
-  "시리얼번호",
-  "최근 검사일",
-  "최근 검사 결과",
-  "검사자",
-  "총 검사 건수",
-];
+import TvTable from "./TvTable.jsx";
 
 const EXPORT_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
-function isNgResult(tv) {
-  return tv.last_result === "NG";
-}
-
 function isValidExportMonth(month) {
   return EXPORT_MONTH_PATTERN.test(month);
+}
+
+function compareTvs(a, b, key) {
+  return String(a[key]).localeCompare(String(b[key]), "ko", { numeric: true });
 }
 
 function TvList() {
@@ -32,7 +23,17 @@ function TvList() {
   const [exportMonth, setExportMonth] = useState("");
   const [selectedSerials, setSelectedSerials] = useState(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
+  const [sort, setSort] = useState({ key: null, direction: "asc" });
   const mountedRef = useRef(true);
+
+  function handleSortClick(key) {
+    setSort((prev) => {
+      if (prev.key !== key) {
+        return { key, direction: "asc" };
+      }
+      return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
+    });
+  }
 
   useEffect(() => {
     mountedRef.current = true;
@@ -125,15 +126,22 @@ function TvList() {
     // it only affects ASCII letters, which is all we need here.
     const normalizedSearchTerm = searchTerm.trim().toLowerCase();
 
-    return tvs.filter((tv) => {
+    const filtered = tvs.filter((tv) => {
       const matchesSearch =
         normalizedSearchTerm === "" ||
         tv.model_name.toLowerCase().includes(normalizedSearchTerm) ||
         tv.serial_number.toLowerCase().includes(normalizedSearchTerm);
-      const matchesNgFilter = !ngOnly || isNgResult(tv);
+      const matchesNgFilter = !ngOnly || tv.last_result === "NG";
       return matchesSearch && matchesNgFilter;
     });
-  }, [tvs, searchTerm, ngOnly]);
+
+    if (!sort.key) {
+      return filtered;
+    }
+
+    const direction = sort.direction === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => direction * compareTvs(a, b, sort.key));
+  }, [tvs, searchTerm, ngOnly, sort]);
 
   function handleExport() {
     if (!isValidExportMonth(exportMonth)) {
@@ -200,49 +208,16 @@ function TvList() {
         </button>
       </div>
 
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              {COLUMNS.map((column) => (
-                <th key={column}>{column}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {visibleTvs.map((tv) => {
-              const isNg = isNgResult(tv);
-              return (
-                <tr
-                  key={tv.serial_number}
-                  className={`is-clickable${isNg ? " row-ng" : ""}`}
-                  onClick={() =>
-                    navigate(`/tvs/${encodeURIComponent(tv.serial_number)}`)
-                  }
-                >
-                  <td onClick={(event) => event.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      checked={selectedSerials.has(tv.serial_number)}
-                      onChange={() => toggleSelected(tv.serial_number)}
-                    />
-                  </td>
-                  <td>{tv.model_name}</td>
-                  <td>{tv.serial_number}</td>
-                  <td>{tv.last_inspected_at}</td>
-                  <td>
-                    <span className={`badge ${isNg ? "badge-ng" : "badge-ok"}`}>
-                      {tv.last_result}
-                    </span>
-                  </td>
-                  <td>{tv.last_inspector_name}</td>
-                  <td>{tv.inspection_count}건</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <TvTable
+        tvs={visibleTvs}
+        sort={sort}
+        onSortClick={handleSortClick}
+        selectedSerials={selectedSerials}
+        onToggleSelected={toggleSelected}
+        onRowClick={(serialNumber) =>
+          navigate(`/tvs/${encodeURIComponent(serialNumber)}`)
+        }
+      />
 
       {visibleTvs.length === 0 && (
         <p className="empty-state">검색/필터 결과가 없습니다.</p>
