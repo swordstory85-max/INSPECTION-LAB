@@ -5,6 +5,7 @@ import TvList from "./pages/TvList/TvList.jsx";
 import TvHistory from "./pages/TvHistory/TvHistory.jsx";
 import TvDeletedList from "./pages/TvDeletedList/TvDeletedList.jsx";
 import Stats from "./pages/Stats/Stats.jsx";
+import NotFound from "./pages/NotFound/NotFound.jsx";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="stats" element={<Stats />} />
         <Route path="deleted-tvs" element={<TvDeletedList />} />
         <Route path="tvs/:serial" element={<TvHistory />} />
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   );

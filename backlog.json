@@ -626,6 +626,22 @@
       "doc": null,
       "done_at": null,
       "note": "LB-135/LB-136 완료 당시 summary에 적힌 예시(\"White: 픽셀 이상 / Green: 줄 이상, 국소적 색 이상\", 원문 그대로)가 이번 변경으로 실제 동작과 안 맞게 됐음을 code-reviewer가 지적. 사용자가 \"요약 열에 모든 패턴이 나오게 해, 그대신 픽셀,라인,얼룩 등 대표 내용만 나오고 메모내용은 안나와도 되\"고 요청했고, \"여러 화면·여러 패턴이 동시에 NG인 경우가 데이터에 없다\"고 지적해 시연용 데이터도 함께 추가. DEFECT_TYPE_OPTIONS(value+shortLabel 쌍)를 단일 출처로 두어 축약어 관리를 한 곳에 모음."
+    },
+    {
+      "id": "LB-138",
+      "status": "done",
+      "priority": "검증",
+      "category": "환경",
+      "title": "Vercel SPA 라우팅 새로고침/직접 접속 404 수정",
+      "summary": "완료: 배포된 사이트에서 /tvs, /stats, /deleted-tvs, /tvs/SN000001 등 화면 경로를 주소창에 직접 입력하거나 새로고침해도 404 없이 해당 화면이 정상 렌더링되고, 존재하지 않는 임의 경로(/no-such-route)로 접속하면 빈 화면 대신 \"페이지를 찾을 수 없습니다\" 안내와 목록으로 돌아가는 링크가 표시된다",
+      "where": "frontend/vercel.json, frontend/src/pages/NotFound/NotFound.jsx, frontend/src/App.jsx",
+      "parent": null,
+      "deps": [
+        "LB-127"
+      ],
+      "doc": null,
+      "done_at": null,
+      "note": "사용자가 재배포한 앱 주소로 접속했더니 not found가 뜬다고 알려줘서 발견. React Router SPA인데 Vercel에 fallback rewrite 설정이 없어 정적 파일에 없는 경로는 404였음. rewrite(source \"/(.*)\" -> /index.html)를 추가하면서 생기는 부작용(정의되지 않은 경로도 200으로 index.html을 반환해 헤더만 있고 본문이 빈 화면이 되는 문제)을 code-reviewer가 지적해 catch-all 라우트로 NotFound 화면을 함께 추가."
     }
   ]
 }
