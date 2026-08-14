@@ -5,6 +5,7 @@ const { getInspectionHistory } = require("./history.js");
 const { validateInspectionPayload } = require("./validation.js");
 const { validateCorrectionPayload, addNoteCorrection } = require("./corrections.js");
 const { isValidMonth, writeMonthlyWorkbook } = require("./export.js");
+const { getStats } = require("./stats.js");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -88,6 +89,10 @@ app.post("/inspections/:id/corrections", (req, res) => {
     }
     throw error;
   }
+});
+
+app.get("/stats", (req, res) => {
+  res.json(getStats());
 });
 
 app.get("/inspections/export", async (req, res) => {

@@ -21,6 +21,9 @@ function Layout() {
             <NavLink to="/tvs" end className={navLinkClassName}>
               목록
             </NavLink>
+            <NavLink to="/stats" className={navLinkClassName}>
+              통계
+            </NavLink>
           </nav>
         </div>
       </header>

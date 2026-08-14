@@ -558,6 +558,23 @@
       "doc": null,
       "done_at": null,
       "note": "사용자 요청으로 추가. 총 검사 건수 컬럼은 요청 범위에 없어 정렬 대상에서 제외."
+    },
+    {
+      "id": "LB-134",
+      "status": "done",
+      "priority": "검증",
+      "category": "화면",
+      "title": "불량 통계 대시보드",
+      "summary": "완료: 통계 화면에서 총 검사 건수/OK/NG/NG 비율 KPI 카드, 화면별(White/Red/Green/Blue/Black) NG 건수 막대그래프, 불량 항목별(픽셀 이상/줄 이상/국소적 색 이상/화면 미출력) 건수 막대그래프, 검사자별 OK/NG/총 건수 표를 확인할 수 있다",
+      "where": "backend/stats.js, backend/index.js, frontend/src/pages/Stats, frontend/src/App.jsx, frontend/src/Layout.jsx, frontend/src/index.css",
+      "parent": null,
+      "deps": [
+        "LB-112",
+        "LB-130"
+      ],
+      "doc": null,
+      "done_at": null,
+      "note": "사용자가 앱에 추천할 만한 기능을 물어봐서, 이미 쌓인 검사 데이터로 바로 가치가 나오고 BRIEF.md의 원래 문제의식(불량 항목 누락 확인의 불편)과 맞는 기능으로 제안해 승인받아 구현. 소프트 삭제된 TV의 검사 기록은 통계에서 제외."
     }
   ]
 }
