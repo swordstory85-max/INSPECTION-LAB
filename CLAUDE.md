@@ -25,10 +25,11 @@
 ## backlog.json 작업 관련 코드를 수정한 뒤에는 항상
 
 1. `code-reviewer` 서브에이전트를 호출해 변경된 파일을 검토한다.
-2. 지적사항을 사용자에게 보여주고, 수정을 반영할지 물어본다. 반영하기로 하면 직접 수정한다(다시 code-reviewer를 부를지는 상황에 따라 판단).
+2. 지적사항은 사용자에게 묻지 않고 전부 직접 반영한다(Critical/High/Low 가리지 않고 전부 고친다). 반영 후 변경 폭이 크면 다시 code-reviewer를 부를지는 상황에 따라 판단한다.
 3. 이번에 구현한 게 backlog.json에 이미 있는 LB 작업이 아니라 사용자가 즉석에서 새로 요청한 기능/변경이면, `backlog-recorder` 서브에이전트를 호출해 backlog.json에 새 LB 항목으로 등록하고 done 처리한다.
-4. `git-committer` 서브에이전트를 호출하기 전에 커밋할지 사용자에게 물어본다. 승인받은 뒤에만 `git-committer`를 호출한다.
-5. frontend 쪽 변경(화면/스타일)이었다면, 커밋 후 별도로 묻지 않고 바로 재배포한다: `cd frontend && vercel deploy --prod --yes`. 배포 주소는 항상 https://frontend-kappa-two-64.vercel.app 로 고정된다(alias). 재배포 후에는 반드시 `cd ..`로 저장소 루트로 돌아온다 — 안 돌아오면 다음 Stop 훅이 잘못된 경로에서 실행되어 실패한다.
+4. 커밋 여부를 묻지 않고 바로 `git-committer` 서브에이전트를 호출한다(다만 push는 git-committer 자체 규칙상 하지 않는다 — push는 별도로 명시적 요청이 있을 때만 한다).
+5. frontend 쪽 변경(화면/스타일)이었다면, 커밋 후 바로 재배포한다: `cd frontend && vercel deploy --prod --yes`. 배포 주소는 항상 https://frontend-kappa-two-64.vercel.app 로 고정된다(alias). 재배포 후에는 반드시 `cd ..`로 저장소 루트로 돌아온다 — 안 돌아오면 다음 Stop 훅이 잘못된 경로에서 실행되어 실패한다.
+6. 이 1~5 과정 전체를 사용자 확인 없이 스스로 끝까지 진행한다(사용자가 "앞으로 묻지 말고 다 적용해줘"라고 명시적으로 요청함, 2026-08-14). 단, 요구사항 자체가 불명확하거나 여러 갈래로 해석되는 경우, 또는 기존 규칙(append-only, 외부 DB 금지 등)과 충돌하는 경우에는 예외적으로 먼저 확인한다.
 
 ## 배포
 
