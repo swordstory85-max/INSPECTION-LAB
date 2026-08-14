@@ -642,6 +642,23 @@
       "doc": null,
       "done_at": null,
       "note": "사용자가 재배포한 앱 주소로 접속했더니 not found가 뜬다고 알려줘서 발견. React Router SPA인데 Vercel에 fallback rewrite 설정이 없어 정적 파일에 없는 경로는 404였음. rewrite(source \"/(.*)\" -> /index.html)를 추가하면서 생기는 부작용(정의되지 않은 경로도 200으로 index.html을 반환해 헤더만 있고 본문이 빈 화면이 되는 문제)을 code-reviewer가 지적해 catch-all 라우트로 NotFound 화면을 함께 추가."
+    },
+    {
+      "id": "LB-139",
+      "status": "done",
+      "priority": "핵심",
+      "category": "환경",
+      "title": "검사자 정보 저장소를 SQLite에서 Supabase로 이전",
+      "summary": "완료: 검사 저장 시 입력한 검사자 이름/사번/연락처가 Supabase(Postgres) inspector 테이블에 적재되고, TV 목록·이력·통계·엑셀 다운로드 등 기존 화면에는 표시 결과 변화 없이 그대로 동작한다",
+      "where": "backend/db.js, backend/supabaseClient.js, backend/inspectors.js, backend/dbLock.js, backend/httpError.js, backend/inspections.js, backend/history.js, backend/tvs.js, backend/stats.js, backend/export.js, backend/corrections.js, backend/index.js, backend/scripts/seed.js, backend/scripts/migrate-inspectors-to-supabase.js, backend/supabase/schema.sql, backend/.env.example, backend/.gitignore, CLAUDE.md, SPEC.md",
+      "parent": null,
+      "deps": [
+        "LB-103",
+        "LB-125"
+      ],
+      "doc": "SPEC.md §6",
+      "done_at": null,
+      "note": "검사자 정보를 별도 저장소로 분리 관리하기 위해 Supabase(Postgres) 전용 inspector 테이블로 이전. 로그인/계정 시스템은 추가하지 않았고 여전히 매 검사마다 자유 입력 방식을 유지(LB-125 결정 유지). TV/검사/화면판정 데이터는 append-only 규칙 때문에 로컬 SQLite에 그대로 남기고 검사자 정보만 옮김. RLS를 켜고 service_role 키로만 백엔드가 접근하도록 해 외부 노출을 막았다. 기존 로컬 데이터 147건은 1회성 스크립트로 백필 후 로컬 컬럼을 drop. CLAUDE.md의 외부 DB 금지 규칙은 이 결정에 맞춰 삭제됨."
     }
   ]
 }

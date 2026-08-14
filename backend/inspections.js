@@ -1,4 +1,6 @@
 const db = require("./db.js");
+const { insertInspector } = require("./inspectors.js");
+const { withDbLock } = require("./dbLock.js");
 
 const upsertTvStmt = db.prepare(`
   INSERT INTO tv (serial_number, model_name) VALUES (?, ?)
@@ -7,8 +9,8 @@ const upsertTvStmt = db.prepare(`
 
 const insertInspectionStmt = db.prepare(`
   INSERT INTO inspection
-    (tv_serial_number, model_name, inspector_name, inspector_id, inspector_contact, overall_result)
-  VALUES (?, ?, ?, ?, ?, ?)
+    (tv_serial_number, model_name, overall_result)
+  VALUES (?, ?, ?)
 `);
 
 const insertScreenResultStmt = db.prepare(`
@@ -16,7 +18,11 @@ const insertScreenResultStmt = db.prepare(`
   VALUES (?, ?, ?, ?, ?)
 `);
 
-function createInspection({
+function createInspection(payload) {
+  return withDbLock(() => createInspectionLocked(payload));
+}
+
+async function createInspectionLocked({
   model_name,
   tv_serial_number,
   inspector_name,
@@ -35,9 +41,6 @@ function createInspection({
     const { lastInsertRowid: inspectionId } = insertInspectionStmt.run(
       tv_serial_number,
       model_name,
-      inspector_name,
-      inspector_id,
-      inspector_contact,
       overall_result,
     );
 
@@ -50,6 +53,13 @@ function createInspection({
         screen.note ?? null,
       );
     }
+
+    await insertInspector({
+      inspection_id: inspectionId,
+      inspector_name,
+      inspector_id,
+      inspector_contact,
+    });
 
     db.exec("COMMIT");
     return { id: inspectionId, overall_result };

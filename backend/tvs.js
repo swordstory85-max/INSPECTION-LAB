@@ -1,4 +1,7 @@
 const db = require("./db.js");
+const { getInspectorsByInspectionIds } = require("./inspectors.js");
+const { withDbLock } = require("./dbLock.js");
+const { httpError } = require("./httpError.js");
 
 const RANKED_INSPECTIONS_CTE = `
   WITH ranked_inspections AS (
@@ -7,7 +10,6 @@ const RANKED_INSPECTIONS_CTE = `
       tv_serial_number,
       inspected_at,
       overall_result,
-      inspector_name,
       ROW_NUMBER() OVER (
         PARTITION BY tv_serial_number ORDER BY inspected_at DESC, id DESC
       ) AS rank,
@@ -38,7 +40,7 @@ const listTvsStmt = db.prepare(`
     t.model_name,
     r.inspected_at AS last_inspected_at,
     r.overall_result AS last_result,
-    r.inspector_name AS last_inspector_name,
+    r.id AS last_inspection_id,
     r.inspection_count,
     sr.screen AS ng_screen,
     sr.defect_types AS ng_defect_types
@@ -57,7 +59,7 @@ const listDeletedTvsStmt = db.prepare(`
     t.model_name,
     r.inspected_at AS last_inspected_at,
     r.overall_result AS last_result,
-    r.inspector_name AS last_inspector_name,
+    r.id AS last_inspection_id,
     r.inspection_count,
     d.deleted_at,
     sr.screen AS ng_screen,
@@ -77,22 +79,14 @@ const insertDeletionIfAbsentStmt = db.prepare(`
 `);
 
 /**
- * @param {string} message
- * @param {number} statusCode
- * @returns {Error & { statusCode: number }}
- */
-function httpError(message, statusCode) {
-  const error = /** @type {Error & { statusCode: number }} */ (new Error(message));
-  error.statusCode = statusCode;
-  return error;
-}
-
-/**
  * listTvsStmt/listDeletedTvsStmt는 TV당 NG 화면 수만큼 행이 늘어나 있다(fan-out
  * LEFT JOIN). serial_number로 다시 묶어 TV 하나당 한 행 + ng_screens 배열로
  * 만드는 순수 함수 — DB 접근이 없어 SQL 결과 배열만 있으면 독립적으로 검증 가능하다.
  */
-function groupTvRows(rows) {
+async function groupTvRows(rows) {
+  const inspectorsById = await getInspectorsByInspectionIds([
+    ...new Set(rows.map((row) => row.last_inspection_id)),
+  ]);
   const bySerial = new Map();
 
   for (const row of rows) {
@@ -103,7 +97,8 @@ function groupTvRows(rows) {
         model_name: row.model_name,
         last_inspected_at: row.last_inspected_at,
         last_result: row.last_result,
-        last_inspector_name: row.last_inspector_name,
+        last_inspector_name:
+          inspectorsById.get(row.last_inspection_id)?.inspector_name ?? null,
         inspection_count: row.inspection_count,
         ng_screens: [],
       };
@@ -140,16 +135,18 @@ function listDeletedTvs() {
  * check-then-insert 경쟁 조건 없이 이미 삭제된 상태인지 changes로 판별한다.
  */
 function hideTv(serialNumber) {
-  if (!getTvStmt.get(serialNumber)) {
-    throw httpError(`시리얼번호 ${serialNumber}인 TV가 없습니다.`, 404);
-  }
+  return withDbLock(() => {
+    if (!getTvStmt.get(serialNumber)) {
+      throw httpError(`시리얼번호 ${serialNumber}인 TV가 없습니다.`, 404);
+    }
 
-  const result = insertDeletionIfAbsentStmt.run(serialNumber);
-  if (result.changes === 0) {
-    throw httpError(`시리얼번호 ${serialNumber}는 이미 삭제 처리되었습니다.`, 400);
-  }
+    const result = insertDeletionIfAbsentStmt.run(serialNumber);
+    if (result.changes === 0) {
+      throw httpError(`시리얼번호 ${serialNumber}는 이미 삭제 처리되었습니다.`, 400);
+    }
 
-  return { serial_number: serialNumber };
+    return { serial_number: serialNumber };
+  });
 }
 
 module.exports = { listTvs, listDeletedTvs, hideTv };

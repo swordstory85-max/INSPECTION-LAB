@@ -33,43 +33,34 @@ app.get("/health", (req, res) => {
   res.type("text/plain").send("OK");
 });
 
-app.post("/inspections", (req, res) => {
+app.post("/inspections", async (req, res) => {
   const errors = validateInspectionPayload(req.body);
   if (errors.length > 0) {
     res.status(400).json({ errors });
     return;
   }
 
-  const result = createInspection(req.body);
+  const result = await createInspection(req.body);
   res.status(201).json(result);
 });
 
-app.get("/tvs", (req, res) => {
-  res.json(listTvs());
+app.get("/tvs", async (req, res) => {
+  res.json(await listTvs());
 });
 
-app.get("/tvs/deleted", (req, res) => {
-  res.json(listDeletedTvs());
+app.get("/tvs/deleted", async (req, res) => {
+  res.json(await listDeletedTvs());
 });
 
-app.delete("/tvs/:serial", (req, res) => {
-  try {
-    const result = hideTv(req.params.serial);
-    res.status(200).json(result);
-  } catch (error) {
-    if (error.statusCode) {
-      res.status(error.statusCode).json({ errors: [error.message] });
-      return;
-    }
-    throw error;
-  }
+app.delete("/tvs/:serial", async (req, res) => {
+  res.status(200).json(await hideTv(req.params.serial));
 });
 
-app.get("/tvs/:serial/inspections", (req, res) => {
-  res.json(getInspectionHistory(req.params.serial));
+app.get("/tvs/:serial/inspections", async (req, res) => {
+  res.json(await getInspectionHistory(req.params.serial));
 });
 
-app.post("/inspections/:id/corrections", (req, res) => {
+app.post("/inspections/:id/corrections", async (req, res) => {
   const inspectionId = Number(req.params.id);
   const { screen, note } = req.body ?? {};
 
@@ -79,20 +70,12 @@ app.post("/inspections/:id/corrections", (req, res) => {
     return;
   }
 
-  try {
-    const result = addNoteCorrection(inspectionId, screen, note);
-    res.status(201).json(result);
-  } catch (error) {
-    if (error.statusCode) {
-      res.status(error.statusCode).json({ errors: [error.message] });
-      return;
-    }
-    throw error;
-  }
+  const result = await addNoteCorrection(inspectionId, screen, note);
+  res.status(201).json(result);
 });
 
-app.get("/stats", (req, res) => {
-  res.json(getStats());
+app.get("/stats", async (req, res) => {
+  res.json(await getStats());
 });
 
 app.get("/inspections/export", async (req, res) => {
@@ -103,6 +86,11 @@ app.get("/inspections/export", async (req, res) => {
   }
 
   await writeMonthlyWorkbook(res, month);
+});
+
+// eslint-disable-next-line no-unused-vars -- Express는 인자 개수(4개)로 에러 미들웨어를 구분한다.
+app.use((error, req, res, next) => {
+  res.status(error.statusCode ?? 500).json({ errors: [error.message] });
 });
 
 app.listen(PORT, () => {
