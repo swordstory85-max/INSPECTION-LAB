@@ -5,6 +5,7 @@ import TvList from "./pages/TvList/TvList.jsx";
 import TvHistory from "./pages/TvHistory/TvHistory.jsx";
 import TvDeletedList from "./pages/TvDeletedList/TvDeletedList.jsx";
 import Stats from "./pages/Stats/Stats.jsx";
+import InspectorRegistry from "./pages/InspectorRegistry/InspectorRegistry.jsx";
 import NotFound from "./pages/NotFound/NotFound.jsx";
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
         <Route path="inspect" element={<InspectionForm />} />
         <Route path="tvs" element={<TvList />} />
         <Route path="stats" element={<Stats />} />
+        <Route path="inspectors" element={<InspectorRegistry />} />
         <Route path="deleted-tvs" element={<TvDeletedList />} />
         <Route path="tvs/:serial" element={<TvHistory />} />
         <Route path="*" element={<NotFound />} />

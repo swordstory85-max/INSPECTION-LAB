@@ -659,6 +659,39 @@
       "doc": "SPEC.md §6",
       "done_at": null,
       "note": "검사자 정보를 별도 저장소로 분리 관리하기 위해 Supabase(Postgres) 전용 inspector 테이블로 이전. 로그인/계정 시스템은 추가하지 않았고 여전히 매 검사마다 자유 입력 방식을 유지(LB-125 결정 유지). TV/검사/화면판정 데이터는 append-only 규칙 때문에 로컬 SQLite에 그대로 남기고 검사자 정보만 옮김. RLS를 켜고 service_role 키로만 백엔드가 접근하도록 해 외부 노출을 막았다. 기존 로컬 데이터 147건은 1회성 스크립트로 백필 후 로컬 컬럼을 drop. CLAUDE.md의 외부 DB 금지 규칙은 이 결정에 맞춰 삭제됨."
+    },
+    {
+      "id": "LB-140",
+      "status": "done",
+      "priority": "핵심",
+      "category": "화면",
+      "title": "검사자 등록 명부 관리 화면 추가",
+      "summary": "완료: /inspectors 화면에서 이름·사번·연락처를 입력해 검사자를 등록하고, 목록에서 기존 검사자 정보를 수정하거나 삭제할 수 있다",
+      "where": "backend/registeredInspectors.js, backend/index.js, backend/supabase/schema.sql, frontend/src/pages/InspectorRegistry/InspectorRegistry.jsx, frontend/src/App.jsx, frontend/src/Layout.jsx",
+      "parent": null,
+      "deps": [
+        "LB-139"
+      ],
+      "doc": "SPEC.md §6",
+      "done_at": null,
+      "note": "사용자가 검사 입력 시 검사자 정보를 매번 자유 텍스트로 입력하는 대신 미리 등록해두고 선택하는 방식으로 바꿔달라고 요청. append-only 규칙이 적용되는 검사 이력용 inspector 테이블과는 별개로, 자유롭게 추가/수정/삭제 가능한 registered_inspector 명부 테이블과 CRUD API·화면을 신설."
+    },
+    {
+      "id": "LB-141",
+      "status": "done",
+      "priority": "핵심",
+      "category": "검증",
+      "title": "검사 입력 시 검사자를 등록 명부에서 선택하도록 변경",
+      "summary": "완료: 검사 입력 화면의 검사자 칸이 이름/사번/연락처 자유 텍스트 3칸 대신 \"이름 (사번)\" 형식의 select 하나로 바뀌고, 등록되지 않은 사번으로 저장을 시도하면(API 직접 호출로 우회해도) 400 오류로 저장이 거부되며, 저장된 기록의 이름·연락처는 항상 그 시점 등록 명부 값으로 기록된다",
+      "where": "backend/validation.js, backend/inspections.js, backend/index.js, frontend/src/pages/InspectionForm/InspectionForm.jsx, SPEC.md",
+      "parent": null,
+      "deps": [
+        "LB-140",
+        "LB-116"
+      ],
+      "doc": "SPEC.md §6",
+      "done_at": null,
+      "note": "LB-125에서 확정했던 \"검사자 계정 사전 등록 없음, 자유 입력\" 결정을 사용자 요청으로 뒤집어 LB-125를 대체(supersede)함. 클라이언트가 보낸 이름/연락처를 그대로 신뢰하지 않고 서버가 사번으로 등록 명부를 재조회해 기록하도록 해 위변조를 막았다. 로그인/계정 인증 자체는 여전히 도입하지 않았다."
     }
   ]
 }

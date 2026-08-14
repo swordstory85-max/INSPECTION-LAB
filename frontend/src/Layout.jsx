@@ -24,6 +24,9 @@ function Layout() {
             <NavLink to="/stats" className={navLinkClassName}>
               통계
             </NavLink>
+            <NavLink to="/inspectors" className={navLinkClassName}>
+              검사자 등록
+            </NavLink>
           </nav>
         </div>
       </header>

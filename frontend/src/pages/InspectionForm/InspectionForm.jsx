@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { API_BASE_URL } from "../../config.js";
 import ScreenJudgmentTable from "./ScreenJudgmentTable.jsx";
 import { SCREENS } from "./constants.js";
@@ -14,9 +14,6 @@ const initialTvInfo = {
 const TV_INFO_FIELDS = [
   { field: "model_name", label: "모델명" },
   { field: "tv_serial_number", label: "시리얼번호" },
-  { field: "inspector_name", label: "검사자 이름" },
-  { field: "inspector_id", label: "검사자 사번" },
-  { field: "inspector_contact", label: "검사자 연락처" },
 ];
 
 const initialScreenResults = SCREENS.reduce((acc, screen) => {
@@ -39,11 +36,31 @@ function InspectionForm() {
   const [screenDetails, setScreenDetails] = useState(initialScreenDetails);
   const [feedback, setFeedback] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [registeredInspectors, setRegisteredInspectors] = useState([]);
+  const [inspectorLoadError, setInspectorLoadError] = useState("");
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/registered-inspectors`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`검사자 목록을 불러오지 못했습니다 (status ${response.status})`);
+        }
+        return response.json();
+      })
+      .then(setRegisteredInspectors)
+      .catch((err) => setInspectorLoadError(err.message));
+  }, []);
 
   function findMissingTvInfoLabels() {
-    return TV_INFO_FIELDS.filter(({ field }) => tvInfo[field].trim() === "").map(
-      ({ label }) => label,
-    );
+    const missing = TV_INFO_FIELDS.filter(
+      ({ field }) => tvInfo[field].trim() === "",
+    ).map(({ label }) => label);
+
+    if (tvInfo.inspector_id.trim() === "") {
+      missing.push("검사자");
+    }
+
+    return missing;
   }
 
   function findMissingScreens() {
@@ -151,6 +168,19 @@ function InspectionForm() {
     setTvInfo((prev) => ({ ...prev, [id]: value }));
   }
 
+  function handleInspectorSelect(event) {
+    const employeeId = event.target.value;
+    const selected = registeredInspectors.find(
+      (inspector) => inspector.employee_id === employeeId,
+    );
+    setTvInfo((prev) => ({
+      ...prev,
+      inspector_id: selected?.employee_id ?? "",
+      inspector_name: selected?.name ?? "",
+      inspector_contact: selected?.contact ?? "",
+    }));
+  }
+
   function updateScreenDetail(screen, updater) {
     setScreenDetails((prev) => ({
       ...prev,
@@ -208,6 +238,33 @@ function InspectionForm() {
                 </td>
               </tr>
             ))}
+            <tr>
+              <th>
+                <label htmlFor="inspector_id">검사자</label>
+              </th>
+              <td>
+                <select
+                  id="inspector_id"
+                  value={tvInfo.inspector_id}
+                  onChange={handleInspectorSelect}
+                >
+                  <option value="">선택하세요</option>
+                  {registeredInspectors.map((inspector) => (
+                    <option key={inspector.id} value={inspector.employee_id}>
+                      {inspector.name} ({inspector.employee_id})
+                    </option>
+                  ))}
+                </select>
+                {inspectorLoadError && (
+                  <p className="error-text">{inspectorLoadError}</p>
+                )}
+                {!inspectorLoadError && registeredInspectors.length === 0 && (
+                  <p className="empty-state">
+                    등록된 검사자가 없습니다. 검사자 등록 메뉴에서 먼저 등록해주세요.
+                  </p>
+                )}
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>

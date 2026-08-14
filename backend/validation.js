@@ -1,9 +1,10 @@
+// inspector_name/inspector_contact는 저장 시 등록 명부 값으로 대체되므로
+// 검증하지 않는다(registeredInspectors.js 조회 결과가 진짜 기준) — inspector_id
+// (선택된 검사자 사번)만 있으면 된다.
 const TV_INFO_FIELD_LABELS = {
   model_name: "모델명",
   tv_serial_number: "시리얼번호",
-  inspector_name: "검사자 이름",
-  inspector_id: "검사자 사번",
-  inspector_contact: "검사자 연락처",
+  inspector_id: "검사자",
 };
 
 const REQUIRED_SCREENS = ["White", "Red", "Green", "Blue", "Black"];
@@ -80,4 +81,23 @@ function validateInspectionPayload(payload) {
   return [...validateTvInfo(payload), ...validateScreens(payload.screens)];
 }
 
-module.exports = { validateInspectionPayload };
+const REGISTERED_INSPECTOR_FIELD_LABELS = {
+  name: "이름",
+  employee_id: "사번",
+  contact: "연락처",
+};
+
+function validateRegisteredInspectorPayload(payload) {
+  const errors = [];
+
+  for (const [field, label] of Object.entries(REGISTERED_INSPECTOR_FIELD_LABELS)) {
+    const value = payload?.[field];
+    if (typeof value !== "string" || value.trim() === "") {
+      errors.push(`${label} 값이 비어 있습니다.`);
+    }
+  }
+
+  return errors;
+}
+
+module.exports = { validateInspectionPayload, validateRegisteredInspectorPayload };
