@@ -557,3 +557,11 @@ tbody tr.row-ng:hover {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+
+.ng-summary {
+  margin-top: 4px;
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+  max-width: 220px;
+  overflow-wrap: break-word;
+}

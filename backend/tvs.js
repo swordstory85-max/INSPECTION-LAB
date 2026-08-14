@@ -3,6 +3,7 @@ const db = require("./db.js");
 const RANKED_INSPECTIONS_CTE = `
   WITH ranked_inspections AS (
     SELECT
+      id,
       tv_serial_number,
       inspected_at,
       overall_result,
@@ -15,6 +16,21 @@ const RANKED_INSPECTIONS_CTE = `
   )
 `;
 
+// 최근 검사(rank=1)에 속한 NG screen_result를 LEFT JOIN으로 같이 가져와서,
+// 목록에서 "최근 검사가 왜 NG인지"를 화면별로 요약해 보여줄 수 있게 한다.
+// 화면 표시 순서가 저장 순서(sr.id)가 아니라 항상 White→Red→Green→Blue→Black을
+// 따르도록 CASE로 명시적으로 정렬한다(다른 클라이언트가 다른 순서로 저장해도 안전).
+const NG_SCREEN_JOIN = `LEFT JOIN screen_result sr ON sr.inspection_id = r.id AND sr.result = 'NG'`;
+const NG_SCREEN_ORDER = `
+  CASE sr.screen
+    WHEN 'White' THEN 1
+    WHEN 'Red' THEN 2
+    WHEN 'Green' THEN 3
+    WHEN 'Blue' THEN 4
+    WHEN 'Black' THEN 5
+  END
+`;
+
 const listTvsStmt = db.prepare(`
   ${RANKED_INSPECTIONS_CTE}
   SELECT
@@ -23,12 +39,15 @@ const listTvsStmt = db.prepare(`
     r.inspected_at AS last_inspected_at,
     r.overall_result AS last_result,
     r.inspector_name AS last_inspector_name,
-    r.inspection_count
+    r.inspection_count,
+    sr.screen AS ng_screen,
+    sr.defect_types AS ng_defect_types
   FROM tv t
   JOIN ranked_inspections r ON r.tv_serial_number = t.serial_number AND r.rank = 1
   LEFT JOIN tv_deletion d ON d.tv_serial_number = t.serial_number
+  ${NG_SCREEN_JOIN}
   WHERE d.id IS NULL
-  ORDER BY t.serial_number
+  ORDER BY t.serial_number, ${NG_SCREEN_ORDER}
 `);
 
 const listDeletedTvsStmt = db.prepare(`
@@ -40,11 +59,14 @@ const listDeletedTvsStmt = db.prepare(`
     r.overall_result AS last_result,
     r.inspector_name AS last_inspector_name,
     r.inspection_count,
-    d.deleted_at
+    d.deleted_at,
+    sr.screen AS ng_screen,
+    sr.defect_types AS ng_defect_types
   FROM tv t
   JOIN ranked_inspections r ON r.tv_serial_number = t.serial_number AND r.rank = 1
   JOIN tv_deletion d ON d.tv_serial_number = t.serial_number
-  ORDER BY d.deleted_at DESC
+  ${NG_SCREEN_JOIN}
+  ORDER BY d.deleted_at DESC, ${NG_SCREEN_ORDER}
 `);
 
 const getTvStmt = db.prepare(`SELECT serial_number FROM tv WHERE serial_number = ?`);
@@ -65,12 +87,49 @@ function httpError(message, statusCode) {
   return error;
 }
 
+/**
+ * listTvsStmt/listDeletedTvsStmt는 TV당 NG 화면 수만큼 행이 늘어나 있다(fan-out
+ * LEFT JOIN). serial_number로 다시 묶어 TV 하나당 한 행 + ng_screens 배열로
+ * 만드는 순수 함수 — DB 접근이 없어 SQL 결과 배열만 있으면 독립적으로 검증 가능하다.
+ */
+function groupTvRows(rows) {
+  const bySerial = new Map();
+
+  for (const row of rows) {
+    let tv = bySerial.get(row.serial_number);
+    if (!tv) {
+      tv = {
+        serial_number: row.serial_number,
+        model_name: row.model_name,
+        last_inspected_at: row.last_inspected_at,
+        last_result: row.last_result,
+        last_inspector_name: row.last_inspector_name,
+        inspection_count: row.inspection_count,
+        ng_screens: [],
+      };
+      if (row.deleted_at !== undefined) {
+        tv.deleted_at = row.deleted_at;
+      }
+      bySerial.set(row.serial_number, tv);
+    }
+
+    if (row.ng_screen !== null) {
+      tv.ng_screens.push({
+        screen: row.ng_screen,
+        defect_types: JSON.parse(row.ng_defect_types),
+      });
+    }
+  }
+
+  return [...bySerial.values()];
+}
+
 function listTvs() {
-  return listTvsStmt.all();
+  return groupTvRows(listTvsStmt.all());
 }
 
 function listDeletedTvs() {
-  return listDeletedTvsStmt.all();
+  return groupTvRows(listDeletedTvsStmt.all());
 }
 
 /**

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../../config.js";
+import { formatNgSummary } from "../../utils/ngSummary.js";
 
 const COLUMNS = [
   "모델명",
@@ -81,6 +82,9 @@ function TvDeletedList() {
                   <span className={`badge ${isNg ? "badge-ng" : "badge-ok"}`}>
                     {tv.last_result}
                   </span>
+                  {isNg && tv.ng_screens.length > 0 && (
+                    <div className="ng-summary">{formatNgSummary(tv.ng_screens)}</div>
+                  )}
                 </td>
                 <td>{tv.last_inspector_name}</td>
                 <td>{tv.inspection_count}건</td>

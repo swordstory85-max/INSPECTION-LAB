@@ -575,6 +575,24 @@
       "doc": null,
       "done_at": null,
       "note": "사용자가 앱에 추천할 만한 기능을 물어봐서, 이미 쌓인 검사 데이터로 바로 가치가 나오고 BRIEF.md의 원래 문제의식(불량 항목 누락 확인의 불편)과 맞는 기능으로 제안해 승인받아 구현. 소프트 삭제된 TV의 검사 기록은 통계에서 제외."
+    },
+    {
+      "id": "LB-135",
+      "status": "done",
+      "priority": "검증",
+      "category": "화면",
+      "title": "목록 화면에서 최근 검사 NG 화면·불량 항목 요약 표시",
+      "summary": "완료: TV 목록/삭제된 목록 화면에서 최근 검사가 NG이면 NG 배지 아래 어떤 화면이 NG였는지와 각 화면의 불량 항목이 \"White: 픽셀 이상 / Green: 줄 이상, 국소적 색 이상\" 형식으로 요약 표시된다",
+      "where": "backend/tvs.js, frontend/src/utils/ngSummary.js, frontend/src/pages/TvList/TvTable.jsx, frontend/src/pages/TvDeletedList/TvDeletedList.jsx, frontend/src/index.css",
+      "parent": null,
+      "deps": [
+        "LB-113",
+        "LB-120",
+        "LB-130"
+      ],
+      "doc": null,
+      "done_at": null,
+      "note": "사용자가 목록 화면에서 NG인 경우 어떤 패턴들에서 NG인지도 같이 요약해서 보고 싶다고 요청. TV별 이력 화면까지 매번 들어가지 않아도 목록에서 바로 원인을 파악하게 하려는 목적. 화면 순서는 White→Red→Green→Blue→Black 고정."
     }
   ]
 }

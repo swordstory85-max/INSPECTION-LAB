@@ -1,3 +1,5 @@
+import { formatNgSummary } from "../../utils/ngSummary.js";
+
 const COLUMNS = [
   { key: "select", label: "선택", sortable: false },
   { key: "model_name", label: "모델명", sortable: true },
@@ -31,6 +33,9 @@ function TvTable({ tvs, sort, onSortClick, selectedSerials, onToggleSelected, on
             <span className={`badge ${isNg ? "badge-ng" : "badge-ok"}`}>
               {tv.last_result}
             </span>
+            {isNg && tv.ng_screens.length > 0 && (
+              <div className="ng-summary">{formatNgSummary(tv.ng_screens)}</div>
+            )}
           </td>
         );
       case "inspection_count":
