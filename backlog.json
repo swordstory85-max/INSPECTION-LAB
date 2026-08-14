@@ -609,6 +609,23 @@
       "doc": null,
       "done_at": null,
       "note": "사용자가 요약을 별도 열로 만들어달라고 명시적으로 요청. code-reviewer 리뷰 반영해 두 화면에서 반복되던 \"NG면 요약 문자열, 아니면 빈 문자열\" 로직을 ngSummaryCellText 헬퍼로 공용화하고, .ng-summary CSS를 th/td 공용 규칙과 td 전용 규칙으로 분리해 헤더 셀 폭을 맞춤."
+    },
+    {
+      "id": "LB-137",
+      "status": "done",
+      "priority": "검증",
+      "category": "화면",
+      "title": "NG 요약 열 표시를 축약 라벨로 변경 + 다중 화면/다중 항목 샘플 데이터 추가",
+      "summary": "완료: TV 목록/삭제된 목록 화면의 \"NG 요약\" 열에서 불량 항목이 원문(\"픽셀 이상\" 등) 대신 짧은 대표 단어(픽셀/라인/얼룩/미출력)로 표시되고, 한 화면에 항목이 여러 개면 \", \"로, 화면이 여러 개면 \" / \"로 구분된다(예: \"White: 픽셀, 얼룩 / Green: 라인\"). 목록에서 SN000210(TV-88Q), SN000211(TV-55P) 두 대를 검색하면 각각 화면 3개가 NG이고 그중 한 화면은 불량 항목 2개가 동시에 선택된 실제 데이터로 이 표시를 확인할 수 있다",
+      "where": "frontend/src/pages/InspectionForm/constants.js, frontend/src/utils/ngSummary.js",
+      "parent": null,
+      "deps": [
+        "LB-135",
+        "LB-136"
+      ],
+      "doc": null,
+      "done_at": null,
+      "note": "LB-135/LB-136 완료 당시 summary에 적힌 예시(\"White: 픽셀 이상 / Green: 줄 이상, 국소적 색 이상\", 원문 그대로)가 이번 변경으로 실제 동작과 안 맞게 됐음을 code-reviewer가 지적. 사용자가 \"요약 열에 모든 패턴이 나오게 해, 그대신 픽셀,라인,얼룩 등 대표 내용만 나오고 메모내용은 안나와도 되\"고 요청했고, \"여러 화면·여러 패턴이 동시에 NG인 경우가 데이터에 없다\"고 지적해 시연용 데이터도 함께 추가. DEFECT_TYPE_OPTIONS(value+shortLabel 쌍)를 단일 출처로 두어 축약어 관리를 한 곳에 모음."
     }
   ]
 }
