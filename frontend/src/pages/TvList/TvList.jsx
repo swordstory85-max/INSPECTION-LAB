@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../../config.js";
 
-const COLUMNS = ["모델명", "시리얼번호", "최근 검사일", "최근 검사 결과", "검사자"];
+const COLUMNS = ["모델명", "시리얼번호", "최근 검사일", "최근 검사 결과", "검사자", "총 검사 건수"];
 
 const tableStyle = { borderCollapse: "collapse" };
 const cellStyle = { border: "1px solid", padding: 4 };
@@ -144,6 +144,7 @@ function TvList() {
                   {tv.last_result}
                 </td>
                 <td style={cellStyle}>{tv.last_inspector_name}</td>
+                <td style={cellStyle}>{tv.inspection_count}건</td>
               </tr>
             );
           })}
