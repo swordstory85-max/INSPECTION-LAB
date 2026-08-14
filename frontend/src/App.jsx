@@ -3,6 +3,7 @@ import Layout from "./Layout.jsx";
 import InspectionForm from "./pages/InspectionForm/InspectionForm.jsx";
 import TvList from "./pages/TvList/TvList.jsx";
 import TvHistory from "./pages/TvHistory/TvHistory.jsx";
+import TvDeletedList from "./pages/TvDeletedList/TvDeletedList.jsx";
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
         <Route index element={<Navigate to="/inspect" replace />} />
         <Route path="inspect" element={<InspectionForm />} />
         <Route path="tvs" element={<TvList />} />
+        <Route path="deleted-tvs" element={<TvDeletedList />} />
         <Route path="tvs/:serial" element={<TvHistory />} />
       </Route>
     </Routes>

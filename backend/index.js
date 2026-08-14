@@ -1,6 +1,6 @@
 const express = require("express");
 const { createInspection } = require("./inspections.js");
-const { listTvs } = require("./tvs.js");
+const { listTvs, listDeletedTvs, hideTv } = require("./tvs.js");
 const { getInspectionHistory } = require("./history.js");
 const { validateInspectionPayload } = require("./validation.js");
 const { validateCorrectionPayload, addNoteCorrection } = require("./corrections.js");
@@ -17,7 +17,7 @@ app.use((req, res, next) => {
   if (origin && CORS_ORIGINS.includes(origin)) {
     res.header("Access-Control-Allow-Origin", origin);
   }
-  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.header("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") {
     res.sendStatus(204);
@@ -45,6 +45,23 @@ app.post("/inspections", (req, res) => {
 
 app.get("/tvs", (req, res) => {
   res.json(listTvs());
+});
+
+app.get("/tvs/deleted", (req, res) => {
+  res.json(listDeletedTvs());
+});
+
+app.delete("/tvs/:serial", (req, res) => {
+  try {
+    const result = hideTv(req.params.serial);
+    res.status(200).json(result);
+  } catch (error) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ errors: [error.message] });
+      return;
+    }
+    throw error;
+  }
 });
 
 app.get("/tvs/:serial/inspections", (req, res) => {

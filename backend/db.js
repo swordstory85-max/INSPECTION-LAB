@@ -43,6 +43,12 @@ db.exec(`
     new_note TEXT NOT NULL,
     corrected_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
   );
+
+  CREATE TABLE IF NOT EXISTS tv_deletion (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tv_serial_number TEXT NOT NULL UNIQUE REFERENCES tv(serial_number),
+    deleted_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  );
 `);
 
 module.exports = db;

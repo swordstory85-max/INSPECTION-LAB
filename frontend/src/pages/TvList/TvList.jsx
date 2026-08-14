@@ -1,8 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../../config.js";
 
-const COLUMNS = ["모델명", "시리얼번호", "최근 검사일", "최근 검사 결과", "검사자", "총 검사 건수"];
+const COLUMNS = [
+  "선택",
+  "모델명",
+  "시리얼번호",
+  "최근 검사일",
+  "최근 검사 결과",
+  "검사자",
+  "총 검사 건수",
+];
 
 const tableStyle = { borderCollapse: "collapse" };
 const cellStyle = { border: "1px solid", padding: 4 };
@@ -23,14 +31,24 @@ function isValidExportMonth(month) {
 function TvList() {
   const navigate = useNavigate();
   const [tvs, setTvs] = useState([]);
-  const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [ngOnly, setNgOnly] = useState(false);
   const [exportMonth, setExportMonth] = useState("");
+  const [selectedSerials, setSelectedSerials] = useState(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    let cancelled = false;
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
+  function loadTvs() {
+    setLoadError("");
     fetch(`${API_BASE_URL}/tvs`)
       .then((response) => {
         if (!response.ok) {
@@ -39,20 +57,74 @@ function TvList() {
         return response.json();
       })
       .then((data) => {
-        if (!cancelled) {
+        if (mountedRef.current) {
           setTvs(data);
         }
       })
       .catch((err) => {
-        if (!cancelled) {
-          setError(err.message);
+        if (mountedRef.current) {
+          setLoadError(err.message);
         }
       });
+  }
 
-    return () => {
-      cancelled = true;
-    };
+  useEffect(() => {
+    loadTvs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function toggleSelected(serialNumber) {
+    setSelectedSerials((prev) => {
+      const next = new Set(prev);
+      if (next.has(serialNumber)) {
+        next.delete(serialNumber);
+      } else {
+        next.add(serialNumber);
+      }
+      return next;
+    });
+  }
+
+  async function handleDeleteSelected() {
+    if (isDeleting || selectedSerials.size === 0) {
+      return;
+    }
+
+    const targets = [...selectedSerials];
+    setIsDeleting(true);
+    setDeleteError("");
+    try {
+      const results = await Promise.allSettled(
+        targets.map((serial) =>
+          fetch(`${API_BASE_URL}/tvs/${encodeURIComponent(serial)}`, {
+            method: "DELETE",
+          }).then((response) => {
+            if (!response.ok) {
+              throw new Error(`${serial}: 삭제 실패 (status ${response.status})`);
+            }
+          }),
+        ),
+      );
+
+      const failedSerials = targets.filter(
+        (_, index) => results[index].status === "rejected",
+      );
+      if (failedSerials.length > 0) {
+        const messages = results
+          .filter((result) => result.status === "rejected")
+          .map((result) => result.reason.message);
+        setDeleteError(messages.join(", "));
+      }
+
+      // 실패한 항목만 선택 상태로 남겨 재시도하기 쉽게 한다.
+      setSelectedSerials(new Set(failedSerials));
+      loadTvs();
+    } finally {
+      if (mountedRef.current) {
+        setIsDeleting(false);
+      }
+    }
+  }
 
   const visibleTvs = useMemo(() => {
     // .toLowerCase() is a safe no-op on Korean text (no case distinction);
@@ -79,7 +151,11 @@ function TvList() {
   return (
     <div>
       <h2>TV 목록</h2>
-      {error && <p>{error}</p>}
+      <button type="button" onClick={() => navigate("/deleted-tvs")}>
+        삭제된 목록 보기
+      </button>
+      {loadError && <p>{loadError}</p>}
+      {deleteError && <p>{deleteError}</p>}
 
       <label>
         월별 엑셀 다운로드
@@ -116,6 +192,14 @@ function TvList() {
         NG만 보기
       </label>
 
+      <button
+        type="button"
+        onClick={handleDeleteSelected}
+        disabled={selectedSerials.size === 0 || isDeleting}
+      >
+        선택 삭제 ({selectedSerials.size})
+      </button>
+
       <table style={tableStyle}>
         <thead>
           <tr>
@@ -137,6 +221,13 @@ function TvList() {
                 }
                 style={isNg ? ngRowStyle : okRowStyle}
               >
+                <td style={cellStyle} onClick={(event) => event.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={selectedSerials.has(tv.serial_number)}
+                    onChange={() => toggleSelected(tv.serial_number)}
+                  />
+                </td>
                 <td style={cellStyle}>{tv.model_name}</td>
                 <td style={cellStyle}>{tv.serial_number}</td>
                 <td style={cellStyle}>{tv.last_inspected_at}</td>
