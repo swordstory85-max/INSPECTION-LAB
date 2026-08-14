@@ -559,9 +559,11 @@ tbody tr.row-ng:hover {
 }
 
 .ng-summary {
-  margin-top: 4px;
+  max-width: 220px;
+}
+
+td.ng-summary {
   font-size: 0.76rem;
   color: var(--color-text-muted);
-  max-width: 220px;
   overflow-wrap: break-word;
 }

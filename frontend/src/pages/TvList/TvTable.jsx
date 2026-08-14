@@ -1,4 +1,4 @@
-import { formatNgSummary } from "../../utils/ngSummary.js";
+import { ngSummaryCellText } from "../../utils/ngSummary.js";
 
 const COLUMNS = [
   { key: "select", label: "선택", sortable: false },
@@ -6,6 +6,7 @@ const COLUMNS = [
   { key: "serial_number", label: "시리얼번호", sortable: true },
   { key: "last_inspected_at", label: "최근 검사일", sortable: true },
   { key: "last_result", label: "최근 검사 결과", sortable: true },
+  { key: "ng_summary", label: "NG 요약", sortable: false },
   { key: "last_inspector_name", label: "검사자", sortable: true },
   { key: "inspection_count", label: "총 검사 건수", sortable: false },
 ];
@@ -33,9 +34,12 @@ function TvTable({ tvs, sort, onSortClick, selectedSerials, onToggleSelected, on
             <span className={`badge ${isNg ? "badge-ng" : "badge-ok"}`}>
               {tv.last_result}
             </span>
-            {isNg && tv.ng_screens.length > 0 && (
-              <div className="ng-summary">{formatNgSummary(tv.ng_screens)}</div>
-            )}
+          </td>
+        );
+      case "ng_summary":
+        return (
+          <td key={key} className="ng-summary">
+            {ngSummaryCellText(tv)}
           </td>
         );
       case "inspection_count":
@@ -52,7 +56,11 @@ function TvTable({ tvs, sort, onSortClick, selectedSerials, onToggleSelected, on
           <tr>
             {COLUMNS.map(({ key, label, sortable }) => {
               if (!sortable) {
-                return <th key={key}>{label}</th>;
+                return (
+                  <th key={key} className={key === "ng_summary" ? "ng-summary" : undefined}>
+                    {label}
+                  </th>
+                );
               }
 
               const isSorted = sort.key === key;

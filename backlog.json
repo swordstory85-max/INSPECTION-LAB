@@ -593,6 +593,22 @@
       "doc": null,
       "done_at": null,
       "note": "사용자가 목록 화면에서 NG인 경우 어떤 패턴들에서 NG인지도 같이 요약해서 보고 싶다고 요청. TV별 이력 화면까지 매번 들어가지 않아도 목록에서 바로 원인을 파악하게 하려는 목적. 화면 순서는 White→Red→Green→Blue→Black 고정."
+    },
+    {
+      "id": "LB-136",
+      "status": "done",
+      "priority": "검증",
+      "category": "화면",
+      "title": "목록 화면 NG 요약을 별도 컬럼으로 분리",
+      "summary": "완료: TV 목록/삭제된 목록 화면에서 NG 화면·불량 항목 요약이 최근 검사 결과 셀 안 배지 아래 텍스트가 아니라, \"최근 검사 결과\"와 \"검사자\" 사이의 별도 \"NG 요약\" 열에 표시된다",
+      "where": "frontend/src/pages/TvList/TvTable.jsx, frontend/src/pages/TvDeletedList/TvDeletedList.jsx, frontend/src/utils/ngSummary.js, frontend/src/index.css",
+      "parent": null,
+      "deps": [
+        "LB-135"
+      ],
+      "doc": null,
+      "done_at": null,
+      "note": "사용자가 요약을 별도 열로 만들어달라고 명시적으로 요청. code-reviewer 리뷰 반영해 두 화면에서 반복되던 \"NG면 요약 문자열, 아니면 빈 문자열\" 로직을 ngSummaryCellText 헬퍼로 공용화하고, .ng-summary CSS를 th/td 공용 규칙과 td 전용 규칙으로 분리해 헤더 셀 폭을 맞춤."
     }
   ]
 }
