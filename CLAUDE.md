@@ -27,9 +27,9 @@
 1. `code-reviewer` 서브에이전트를 호출해 변경된 파일을 검토한다.
 2. 지적사항은 사용자에게 묻지 않고 전부 직접 반영한다(Critical/High/Low 가리지 않고 전부 고친다). 반영 후 변경 폭이 크면 다시 code-reviewer를 부를지는 상황에 따라 판단한다.
 3. 이번에 구현한 게 backlog.json에 이미 있는 LB 작업이 아니라 사용자가 즉석에서 새로 요청한 기능/변경이면, `backlog-recorder` 서브에이전트를 호출해 backlog.json에 새 LB 항목으로 등록하고 done 처리한다.
-4. 커밋 여부를 묻지 않고 바로 `git-committer` 서브에이전트를 호출한다(다만 push는 git-committer 자체 규칙상 하지 않는다 — push는 별도로 명시적 요청이 있을 때만 한다).
-5. frontend 쪽 변경(화면/스타일)이었다면, 커밋 후 바로 재배포한다: `cd frontend && vercel deploy --prod --yes`. 배포 주소는 항상 https://frontend-kappa-two-64.vercel.app 로 고정된다(alias). 재배포 후에는 반드시 `cd ..`로 저장소 루트로 돌아온다 — 안 돌아오면 다음 Stop 훅이 잘못된 경로에서 실행되어 실패한다.
-6. 이 1~5 과정 전체를 사용자 확인 없이 스스로 끝까지 진행한다(사용자가 "앞으로 묻지 말고 다 적용해줘"라고 명시적으로 요청함, 2026-08-14). 단, 요구사항 자체가 불명확하거나 여러 갈래로 해석되는 경우, 또는 기존 규칙(append-only, 외부 DB 금지 등)과 충돌하는 경우에는 예외적으로 먼저 확인한다.
+4. 커밋 여부를 묻지 않고 바로 `git-committer` 서브에이전트를 호출한다. `git-committer`는 브랜치를 만들어 커밋하고, push하고, PR을 열고, master로 merge까지 전부 자동으로 처리한다(2026-08-14부터: 더 이상 master에 직접 push하지 않고 브랜치 → PR → merge 흐름을 쓴다). PR/merge에는 `gh` CLI가 설치·인증돼 있어야 한다.
+5. frontend 쪽 변경(화면/스타일)이었다면, git-committer가 merge까지 끝낸 뒤 바로 재배포한다: `cd frontend && vercel deploy --prod --yes`. 배포 주소는 항상 https://frontend-kappa-two-64.vercel.app 로 고정된다(alias). 재배포 후에는 반드시 `cd ..`로 저장소 루트로 돌아온다 — 안 돌아오면 다음 Stop 훅이 잘못된 경로에서 실행되어 실패한다.
+6. 이 1~5 과정 전체를 사용자 확인 없이 스스로 끝까지 진행한다(사용자가 "앞으로 묻지 말고 다 적용해줘", 이어서 "push해서 merge까지 해줘", "git-committer에 push까지 되도록 넣어줘"라고 명시적으로 요청함, 2026-08-14). 단, 요구사항 자체가 불명확하거나 여러 갈래로 해석되는 경우, 또는 기존 규칙(append-only, 외부 DB 금지 등)과 충돌하는 경우에는 예외적으로 먼저 확인한다.
 
 ## 배포
 
@@ -37,6 +37,12 @@
 - backend는 로컬 PC에서 `cd backend && npm run dev`로 띄운 뒤, Cloudflare Tunnel(`cloudflared tunnel --url http://localhost:4000`)로 외부에 노출한다. 터널 URL은 실행할 때마다 바뀌므로, 바뀌면 Vercel 프로젝트의 `VITE_API_BASE_URL` 환경변수와 backend의 `CORS_ORIGIN` 환경변수(콤마로 여러 origin 허용)를 새 URL로 맞춰야 한다.
 - 로컬 backend와 터널이 꺼져 있으면 배포된 사이트는 화면만 뜨고 API 호출은 실패한다. 배포 주소를 사용자에게 안내할 때는 이 전제를 함께 알려준다.
 - 프론트만 재배포하면 되는 상황(코드 변경만 있고 API 주소/CORS는 그대로)에서는 `cd frontend && vercel deploy --prod --yes` 한 번이면 충분하다.
+
+## Git 워크플로
+
+- `master`에 직접 커밋하지 않는다. 모든 변경은 `git-committer` 서브에이전트가 브랜치를 만들어 커밋 → push → PR 생성(`gh pr create`) → merge(`gh pr merge --merge --delete-branch`)까지 처리한다.
+- `gh` CLI는 `C:\Users\sword\.local\bin\gh.exe`에 있다(관리자 권한 없이 zip 압축 해제로 설치, choco는 권한 문제로 실패했었음). `gh auth status`로 로그인 상태(계정 swordstory85-max) 확인 가능.
+- PR을 열 필요가 없는 아주 사소한 변경이라도 예외 없이 브랜치+PR을 거친다 — 일관성을 위해 예외를 두지 않는다.
 
 ## 막히면
 
