@@ -26,10 +26,10 @@
 1. `code-reviewer` 서브에이전트를 호출해 변경된 파일을 검토한다.
 2. 지적사항은 사용자에게 묻지 않고 전부 직접 반영한다(Critical/High/Low 가리지 않고 전부 고친다). 반영 후 변경 폭이 크면 다시 code-reviewer를 부를지는 상황에 따라 판단한다.
 3. 이번에 구현한 게 backlog.json에 이미 있는 LB 작업이 아니라 사용자가 즉석에서 새로 요청한 기능/변경이면, `backlog-recorder` 서브에이전트를 호출해 backlog.json에 새 LB 항목으로 등록하고 done 처리한다.
-4. 커밋 여부를 묻지 않고 바로 `git-committer` 서브에이전트를 호출한다. `git-committer`는 브랜치를 만들어 로컬 커밋까지는 자동으로 한다.
-5. **push는 별도로 항상 사용자에게 먼저 물어본다**(2026-08-14부터: "이제부터 push 전에 물어봐줘"라고 명시적으로 요청받음). 로컬 커밋까지 끝난 뒤 "push할까?" 하고 확인받고, 승인받으면 그때 `git-committer`를 다시 호출하되 프롬프트에 "사용자가 push를 승인했다"는 사실을 명시한다 — 그러면 push → `gh pr create` → `gh pr merge --merge --delete-branch`까지 이어서 진행한다. 승인 없이는 커밋 상태 그대로 둔다.
-6. frontend 쪽 변경(화면/스타일)이었고 push+merge까지 끝났다면, 바로 재배포한다: `cd frontend && vercel deploy --prod --yes`. 배포 주소는 항상 https://frontend-kappa-two-64.vercel.app 로 고정된다(alias). 재배포 후에는 반드시 `cd ..`로 저장소 루트로 돌아온다 — 안 돌아오면 다음 Stop 훅이 잘못된 경로에서 실행되어 실패한다.
-7. 커밋까지의 1~4 과정은 사용자 확인 없이 스스로 진행한다(사용자가 "앞으로 묻지 말고 다 적용해줘"라고 요청함, 2026-08-14). push부터는 5번 규칙대로 항상 먼저 물어본다. 요구사항 자체가 불명확하거나 여러 갈래로 해석되는 경우, 또는 기존 규칙(append-only, 외부 DB 금지 등)과 충돌하는 경우에도 예외적으로 먼저 확인한다.
+4. frontend 쪽 변경(화면/스타일)이 포함되어 있으면, 커밋하기 **전에** 먼저 Vercel에 재배포한다: `cd frontend && vercel deploy --prod --yes` (재배포 후 반드시 `cd ..`로 저장소 루트로 돌아온다 — 안 돌아오면 다음 Stop 훅이 잘못된 경로에서 실행되어 실패한다). 배포 주소는 항상 https://frontend-kappa-two-64.vercel.app 로 고정된다(alias). `vercel deploy`는 git 커밋 여부와 무관하게 로컬 파일 상태를 그대로 올리므로 커밋 전에 실행해도 된다. backend만 바뀌었거나 frontend 변경이 없으면 이 단계는 건너뛴다.
+5. 커밋 여부를 묻지 않고 바로 `git-committer` 서브에이전트를 호출한다. `git-committer`는 브랜치를 만들어 로컬 커밋까지는 자동으로 한다.
+6. **push/merge는 별도로 항상 사용자에게 먼저 물어본다**(2026-08-14부터: "이제부터 push 전에 물어봐줘"라고 요청받았고, 같은 날 "vercel 재배포 후 merge해도 되는지 물어봐줘"로 확인 문구를 구체화함, 이어서 "재배포가 4번, 커밋이 5번"이라고 순서를 바로잡음 — 서브에이전트 호출 순서는 code-reviewer → backlog-recorder → Vercel 재배포 → git-committer(커밋) → [merge 승인 확인] → git-committer(push/PR/merge)). frontend 변경이 있었다면 4번 재배포와 5번 커밋 모두 끝난 뒤 "merge해도 될까?"라고 물어보고, frontend 변경이 없었다면 커밋(5번) 직후 바로 물어본다. 승인받으면 그때 `git-committer`를 다시 호출하되 프롬프트에 "사용자가 push를 승인했다"는 사실을 명시한다 — 그러면 push → `gh pr create` → `gh pr merge --merge --delete-branch`까지 이어서 진행한다. 승인 없이는 커밋(및 재배포된 프리뷰) 상태 그대로 둔다.
+7. frontend 변경 시 재배포(4번)와 커밋(5번)까지는 사용자 확인 없이 스스로 진행한다(사용자가 "앞으로 묻지 말고 다 적용해줘"라고 요청함, 2026-08-14). push/merge부터는 6번 규칙대로 항상 먼저 물어본다. 요구사항 자체가 불명확하거나 여러 갈래로 해석되는 경우, 또는 기존 규칙(append-only 등)과 충돌하는 경우에도 예외적으로 먼저 확인한다.
 
 ## 배포
 

@@ -2,10 +2,16 @@ const express = require("express");
 const { createInspection } = require("./inspections.js");
 const { listTvs, listDeletedTvs, hideTv } = require("./tvs.js");
 const { getInspectionHistory } = require("./history.js");
-const { validateInspectionPayload } = require("./validation.js");
+const { validateInspectionPayload, validateRegisteredInspectorPayload } = require("./validation.js");
 const { validateCorrectionPayload, addNoteCorrection } = require("./corrections.js");
 const { isValidMonth, writeMonthlyWorkbook } = require("./export.js");
 const { getStats } = require("./stats.js");
+const {
+  listRegisteredInspectors,
+  createRegisteredInspector,
+  updateRegisteredInspector,
+  deleteRegisteredInspector,
+} = require("./registeredInspectors.js");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -18,7 +24,7 @@ app.use((req, res, next) => {
   if (origin && CORS_ORIGINS.includes(origin)) {
     res.header("Access-Control-Allow-Origin", origin);
   }
-  res.header("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") {
     res.sendStatus(204);
@@ -76,6 +82,42 @@ app.post("/inspections/:id/corrections", async (req, res) => {
 
 app.get("/stats", async (req, res) => {
   res.json(await getStats());
+});
+
+app.get("/registered-inspectors", async (req, res) => {
+  res.json(await listRegisteredInspectors());
+});
+
+app.post("/registered-inspectors", async (req, res) => {
+  const errors = validateRegisteredInspectorPayload(req.body);
+  if (errors.length > 0) {
+    res.status(400).json({ errors });
+    return;
+  }
+  res.status(201).json(await createRegisteredInspector(req.body));
+});
+
+app.put("/registered-inspectors/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const errors = validateRegisteredInspectorPayload(req.body);
+  if (!Number.isInteger(id)) {
+    errors.push("잘못된 ID입니다.");
+  }
+  if (errors.length > 0) {
+    res.status(400).json({ errors });
+    return;
+  }
+  res.json(await updateRegisteredInspector(id, req.body));
+});
+
+app.delete("/registered-inspectors/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ errors: ["잘못된 ID입니다."] });
+    return;
+  }
+  await deleteRegisteredInspector(id);
+  res.status(204).end();
 });
 
 app.get("/inspections/export", async (req, res) => {
