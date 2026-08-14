@@ -23,6 +23,8 @@ const DEFECT_TYPES = ["픽셀 이상", "줄 이상", "국소적 색 이상", "�
 
 const okSelectedStyle = { backgroundColor: "#2e7d32", color: "#fff" };
 const ngSelectedStyle = { backgroundColor: "#b00020", color: "#fff" };
+const tableStyle = { borderCollapse: "collapse" };
+const cellStyle = { border: "1px solid", padding: 4, verticalAlign: "top" };
 
 const initialScreenResults = SCREENS.reduce((acc, screen) => {
   acc[screen] = null;
@@ -188,64 +190,89 @@ function InspectionForm() {
     <form onSubmit={handleSubmit}>
       <h2>검사 입력</h2>
 
-      {TV_INFO_FIELDS.map(({ field, label }) => (
-        <div key={field}>
-          <label htmlFor={field}>{label}</label>
-          <input
-            id={field}
-            type="text"
-            value={tvInfo[field]}
-            onChange={handleTvInfoChange}
-            onKeyDown={handleTvInfoKeyDown}
-          />
-        </div>
-      ))}
+      <table style={tableStyle} role="presentation">
+        <tbody>
+          {TV_INFO_FIELDS.map(({ field, label }) => (
+            <tr key={field}>
+              <th style={cellStyle}>
+                <label htmlFor={field}>{label}</label>
+              </th>
+              <td style={cellStyle}>
+                <input
+                  id={field}
+                  type="text"
+                  value={tvInfo[field]}
+                  onChange={handleTvInfoChange}
+                  onKeyDown={handleTvInfoKeyDown}
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       <h2>화면별 판정</h2>
 
-      {SCREENS.map((screen) => (
-        <fieldset key={screen}>
-          <legend>{screen}</legend>
-          <button
-            type="button"
-            aria-pressed={screenResults[screen] === "OK"}
-            style={screenResults[screen] === "OK" ? okSelectedStyle : undefined}
-            onClick={() => handleScreenResultToggle(screen, "OK")}
-          >
-            OK
-          </button>
-          <button
-            type="button"
-            aria-pressed={screenResults[screen] === "NG"}
-            style={screenResults[screen] === "NG" ? ngSelectedStyle : undefined}
-            onClick={() => handleScreenResultToggle(screen, "NG")}
-          >
-            NG
-          </button>
-
-          {screenResults[screen] === "NG" && (
-            <div>
-              {DEFECT_TYPES.map((defectType) => (
-                <label key={defectType}>
-                  <input
-                    type="checkbox"
-                    checked={screenDetails[screen].defectTypes.includes(defectType)}
-                    onChange={() => handleDefectTypeToggle(screen, defectType)}
+      <table style={tableStyle}>
+        <thead>
+          <tr>
+            <th style={cellStyle}>화면</th>
+            <th style={cellStyle}>판정</th>
+            <th style={cellStyle}>불량 항목</th>
+            <th style={cellStyle}>조치 메모</th>
+          </tr>
+        </thead>
+        <tbody>
+          {SCREENS.map((screen) => (
+            <tr key={screen}>
+              <td style={cellStyle}>{screen}</td>
+              <td style={cellStyle}>
+                <button
+                  type="button"
+                  aria-pressed={screenResults[screen] === "OK"}
+                  style={screenResults[screen] === "OK" ? okSelectedStyle : undefined}
+                  onClick={() => handleScreenResultToggle(screen, "OK")}
+                >
+                  OK
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={screenResults[screen] === "NG"}
+                  style={screenResults[screen] === "NG" ? ngSelectedStyle : undefined}
+                  onClick={() => handleScreenResultToggle(screen, "NG")}
+                >
+                  NG
+                </button>
+              </td>
+              <td style={cellStyle}>
+                {screenResults[screen] === "NG" &&
+                  DEFECT_TYPES.map((defectType) => (
+                    <label key={defectType} style={{ display: "block" }}>
+                      <input
+                        type="checkbox"
+                        checked={screenDetails[screen].defectTypes.includes(
+                          defectType,
+                        )}
+                        onChange={() => handleDefectTypeToggle(screen, defectType)}
+                      />
+                      {defectType}
+                    </label>
+                  ))}
+              </td>
+              <td style={cellStyle}>
+                {screenResults[screen] === "NG" && (
+                  <textarea
+                    id={`${screen}-note`}
+                    aria-label={`${screen} 조치 메모`}
+                    value={screenDetails[screen].note}
+                    onChange={(event) => handleNoteChange(screen, event.target.value)}
                   />
-                  {defectType}
-                </label>
-              ))}
-
-              <label htmlFor={`${screen}-note`}>조치 메모</label>
-              <textarea
-                id={`${screen}-note`}
-                value={screenDetails[screen].note}
-                onChange={(event) => handleNoteChange(screen, event.target.value)}
-              />
-            </div>
-          )}
-        </fieldset>
-      ))}
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       <button type="submit" disabled={isSubmitting}>
         저장
