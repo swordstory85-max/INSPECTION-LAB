@@ -59,12 +59,12 @@ const seedInspections = [
   },
 ];
 
-function runSeed() {
+async function runSeed() {
   let succeeded = 0;
 
   for (const [index, inspection] of seedInspections.entries()) {
     try {
-      createInspection(inspection);
+      await createInspection(inspection);
       succeeded += 1;
     } catch (error) {
       console.error(
@@ -78,7 +78,7 @@ function runSeed() {
 }
 
 if (require.main === module) {
-  runSeed();
+  runSeed().catch(() => process.exitCode = 1);
 }
 
 module.exports = { seedInspections, runSeed };

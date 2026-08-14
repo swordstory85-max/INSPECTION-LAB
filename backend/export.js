@@ -1,6 +1,7 @@
 const ExcelJS = require("exceljs");
 const db = require("./db.js");
 const { resolveCurrentNote } = require("./noteHistory.js");
+const { getInspectorsByInspectionIds } = require("./inspectors.js");
 
 const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -24,9 +25,6 @@ const monthlyRowsStmt = db.prepare(`
     i.model_name,
     i.tv_serial_number,
     i.inspected_at,
-    i.inspector_name,
-    i.inspector_id,
-    i.inspector_contact,
     i.overall_result,
     s.screen,
     s.result AS screen_result,
@@ -62,13 +60,23 @@ function groupNewNotesByScreenKey(month) {
   return grouped;
 }
 
-function getMonthlyInspectionRows(month) {
+async function getMonthlyInspectionRows(month) {
   const correctionsByKey = groupNewNotesByScreenKey(month);
+  const rows = monthlyRowsStmt.all(month);
+  const inspectorsById = await getInspectorsByInspectionIds([
+    ...new Set(rows.map((row) => row.inspection_id)),
+  ]);
 
-  return monthlyRowsStmt.all(month).map((row) => {
+  return rows.map((row) => {
     const key = `${row.inspection_id}:${row.screen}`;
+    const inspector = inspectorsById.get(row.inspection_id) ?? {
+      inspector_name: null,
+      inspector_id: null,
+      inspector_contact: null,
+    };
     return {
       ...row,
+      ...inspector,
       defect_types: JSON.parse(String(row.defect_types)),
       note: resolveCurrentNote(row.note, correctionsByKey.get(key) ?? []),
     };
@@ -76,7 +84,7 @@ function getMonthlyInspectionRows(month) {
 }
 
 async function writeMonthlyWorkbook(res, month) {
-  const rows = getMonthlyInspectionRows(month);
+  const rows = await getMonthlyInspectionRows(month);
 
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(month);

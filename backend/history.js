@@ -1,13 +1,11 @@
 const db = require("./db.js");
 const { resolveCurrentNote } = require("./noteHistory.js");
+const { getInspectorsByInspectionIds } = require("./inspectors.js");
 
 const historyRowsStmt = db.prepare(`
   SELECT
     i.id AS inspection_id,
     i.inspected_at,
-    i.inspector_name,
-    i.inspector_id,
-    i.inspector_contact,
     i.model_name,
     i.tv_serial_number,
     i.overall_result,
@@ -47,9 +45,12 @@ function groupCorrectionsByInspectionAndScreen(serialNumber) {
   return grouped;
 }
 
-function getInspectionHistory(serialNumber) {
+async function getInspectionHistory(serialNumber) {
   const rows = historyRowsStmt.all(serialNumber);
   const correctionsByKey = groupCorrectionsByInspectionAndScreen(serialNumber);
+  const inspectorsById = await getInspectorsByInspectionIds([
+    ...new Set(rows.map((row) => row.inspection_id)),
+  ]);
 
   const inspections = [];
   const byId = new Map();
@@ -57,12 +58,17 @@ function getInspectionHistory(serialNumber) {
   for (const row of rows) {
     let inspection = byId.get(row.inspection_id);
     if (!inspection) {
+      const inspector = inspectorsById.get(row.inspection_id) ?? {
+        inspector_name: null,
+        inspector_id: null,
+        inspector_contact: null,
+      };
       inspection = {
         id: row.inspection_id,
         inspected_at: row.inspected_at,
-        inspector_name: row.inspector_name,
-        inspector_id: row.inspector_id,
-        inspector_contact: row.inspector_contact,
+        inspector_name: inspector.inspector_name,
+        inspector_id: inspector.inspector_id,
+        inspector_contact: inspector.inspector_contact,
         model_name: row.model_name,
         tv_serial_number: row.tv_serial_number,
         overall_result: row.overall_result,

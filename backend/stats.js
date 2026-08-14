@@ -1,4 +1,5 @@
 const db = require("./db.js");
+const { getInspectorsByInspectionIds } = require("./inspectors.js");
 
 const SCREENS = ["White", "Red", "Green", "Blue", "Black"];
 
@@ -31,12 +32,11 @@ const ngDefectTypesStmt = db.prepare(`
   WHERE s.result = 'NG' AND ${NOT_DELETED_WHERE}
 `);
 
-const inspectorResultStmt = db.prepare(`
-  SELECT i.inspector_name, i.overall_result, COUNT(*) AS count
+const inspectorResultRowsStmt = db.prepare(`
+  SELECT i.id AS inspection_id, i.overall_result
   FROM inspection i
   ${NOT_DELETED_JOIN}
   WHERE ${NOT_DELETED_WHERE}
-  GROUP BY i.inspector_name, i.overall_result
 `);
 
 // node:sqlite의 COUNT(*) 결과 타입(SQLOutputValue)은 문자열/bigint 등도 포함해서,
@@ -74,21 +74,27 @@ function getDefectTypeCounts() {
     .sort((a, b) => b.count - a.count || a.defect_type.localeCompare(b.defect_type, "ko"));
 }
 
-function getInspectorStats() {
-  const rows = inspectorResultStmt.all();
+async function getInspectorStats() {
+  const rows = inspectorResultRowsStmt.all();
+  const inspectorsById = await getInspectorsByInspectionIds(
+    rows.map((row) => row.inspection_id),
+  );
+
   const byInspector = new Map();
   for (const row of rows) {
-    const entry = byInspector.get(row.inspector_name) ?? {
-      inspector_name: row.inspector_name,
+    const inspectorName =
+      inspectorsById.get(row.inspection_id)?.inspector_name ?? "(알 수 없음)";
+    const entry = byInspector.get(inspectorName) ?? {
+      inspector_name: inspectorName,
       ok: 0,
       ng: 0,
     };
     if (row.overall_result === "OK") {
-      entry.ok = Number(row.count);
+      entry.ok += 1;
     } else {
-      entry.ng = Number(row.count);
+      entry.ng += 1;
     }
-    byInspector.set(row.inspector_name, entry);
+    byInspector.set(inspectorName, entry);
   }
   return [...byInspector.values()]
     .map((entry) => ({ ...entry, total: entry.ok + entry.ng }))
@@ -98,12 +104,12 @@ function getInspectorStats() {
     );
 }
 
-function getStats() {
+async function getStats() {
   return {
     overall: getOverallStats(),
     screens: getScreenNgCounts(),
     defectTypes: getDefectTypeCounts(),
-    inspectors: getInspectorStats(),
+    inspectors: await getInspectorStats(),
   };
 }
 

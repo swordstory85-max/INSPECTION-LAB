@@ -18,9 +18,6 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     tv_serial_number TEXT NOT NULL REFERENCES tv(serial_number),
     model_name TEXT NOT NULL,
-    inspector_name TEXT NOT NULL,
-    inspector_id TEXT NOT NULL,
-    inspector_contact TEXT NOT NULL,
     inspected_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     overall_result TEXT NOT NULL CHECK (overall_result IN ('OK', 'NG'))
   );

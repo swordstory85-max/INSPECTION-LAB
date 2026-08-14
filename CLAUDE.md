@@ -19,7 +19,6 @@
 
 - 검사 기록은 추가만 한다. 저장된 기록을 수정하거나 삭제하지 않는다.
 - 화면 판정이 NG면 조치 메모 없이는 저장하지 않는다.
-- 외부 DB나 사내 계정 로그인을 연동하지 않는다.
 - `backlog.json`을 직접 편집하지 않는다. `node tools/backlog.mjs`의 list/set/validate로만 읽고 쓴다.
 
 ## backlog.json 작업 관련 코드를 수정한 뒤에는 항상
@@ -27,9 +26,10 @@
 1. `code-reviewer` 서브에이전트를 호출해 변경된 파일을 검토한다.
 2. 지적사항은 사용자에게 묻지 않고 전부 직접 반영한다(Critical/High/Low 가리지 않고 전부 고친다). 반영 후 변경 폭이 크면 다시 code-reviewer를 부를지는 상황에 따라 판단한다.
 3. 이번에 구현한 게 backlog.json에 이미 있는 LB 작업이 아니라 사용자가 즉석에서 새로 요청한 기능/변경이면, `backlog-recorder` 서브에이전트를 호출해 backlog.json에 새 LB 항목으로 등록하고 done 처리한다.
-4. 커밋 여부를 묻지 않고 바로 `git-committer` 서브에이전트를 호출한다. `git-committer`는 브랜치를 만들어 커밋하고, push하고, PR을 열고, master로 merge까지 전부 자동으로 처리한다(2026-08-14부터: 더 이상 master에 직접 push하지 않고 브랜치 → PR → merge 흐름을 쓴다). PR/merge에는 `gh` CLI가 설치·인증돼 있어야 한다.
-5. frontend 쪽 변경(화면/스타일)이었다면, git-committer가 merge까지 끝낸 뒤 바로 재배포한다: `cd frontend && vercel deploy --prod --yes`. 배포 주소는 항상 https://frontend-kappa-two-64.vercel.app 로 고정된다(alias). 재배포 후에는 반드시 `cd ..`로 저장소 루트로 돌아온다 — 안 돌아오면 다음 Stop 훅이 잘못된 경로에서 실행되어 실패한다.
-6. 이 1~5 과정 전체를 사용자 확인 없이 스스로 끝까지 진행한다(사용자가 "앞으로 묻지 말고 다 적용해줘", 이어서 "push해서 merge까지 해줘", "git-committer에 push까지 되도록 넣어줘"라고 명시적으로 요청함, 2026-08-14). 단, 요구사항 자체가 불명확하거나 여러 갈래로 해석되는 경우, 또는 기존 규칙(append-only, 외부 DB 금지 등)과 충돌하는 경우에는 예외적으로 먼저 확인한다.
+4. 커밋 여부를 묻지 않고 바로 `git-committer` 서브에이전트를 호출한다. `git-committer`는 브랜치를 만들어 로컬 커밋까지는 자동으로 한다.
+5. **push는 별도로 항상 사용자에게 먼저 물어본다**(2026-08-14부터: "이제부터 push 전에 물어봐줘"라고 명시적으로 요청받음). 로컬 커밋까지 끝난 뒤 "push할까?" 하고 확인받고, 승인받으면 그때 `git-committer`를 다시 호출하되 프롬프트에 "사용자가 push를 승인했다"는 사실을 명시한다 — 그러면 push → `gh pr create` → `gh pr merge --merge --delete-branch`까지 이어서 진행한다. 승인 없이는 커밋 상태 그대로 둔다.
+6. frontend 쪽 변경(화면/스타일)이었고 push+merge까지 끝났다면, 바로 재배포한다: `cd frontend && vercel deploy --prod --yes`. 배포 주소는 항상 https://frontend-kappa-two-64.vercel.app 로 고정된다(alias). 재배포 후에는 반드시 `cd ..`로 저장소 루트로 돌아온다 — 안 돌아오면 다음 Stop 훅이 잘못된 경로에서 실행되어 실패한다.
+7. 커밋까지의 1~4 과정은 사용자 확인 없이 스스로 진행한다(사용자가 "앞으로 묻지 말고 다 적용해줘"라고 요청함, 2026-08-14). push부터는 5번 규칙대로 항상 먼저 물어본다. 요구사항 자체가 불명확하거나 여러 갈래로 해석되는 경우, 또는 기존 규칙(append-only, 외부 DB 금지 등)과 충돌하는 경우에도 예외적으로 먼저 확인한다.
 
 ## 배포
 
